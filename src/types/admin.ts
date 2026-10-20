@@ -11,14 +11,14 @@ export type AdminView =
 
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
 export type DiningType = 'dine-in' | 'takeaway' | 'delivery'
-export type KitchenStation = 'all' | 'tandoor' | 'curry' | 'biryani' | 'dessert'
+export type KitchenStation = 'all' | 'biryani' | 'curry' | 'grill' | 'breads' | 'dessert'
 
 export interface OrderItem {
   id: string
   name: string
   quantity: number
   price: number
-  station: 'tandoor' | 'curry' | 'biryani' | 'dessert'
+  station: 'biryani' | 'curry' | 'grill' | 'breads' | 'dessert'
   customizations?: string[]
 }
 

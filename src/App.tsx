@@ -45,7 +45,6 @@ export default function App() {
     (o) => o.status === 'pending' || o.status === 'preparing' || o.status === 'ready'
   ).length
   const lowStockCount = inventory.filter((i) => i.status !== 'optimal').length
-  const occupiedTablesCount = tables.filter((t) => t.status === 'occupied').length
 
   // Action handlers
   const handleUpdateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
@@ -122,13 +121,10 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
         {/* Top Sticky Header */}
         <Header
-          activeView={activeView}
           onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           activeOrdersCount={activeKitchenCount}
-          occupiedTablesCount={occupiedTablesCount}
-          totalRevenue={ANALYTICS_DATA.todayRevenue}
         />
 
         {/* Dynamic Page Content */}
@@ -137,6 +133,7 @@ export default function App() {
             <KitchenKdsView
               orders={orders}
               onUpdateOrderStatus={handleUpdateOrderStatus}
+              onAddTicket={(ticket) => setOrders((prev) => [ticket, ...prev])}
             />
           )}
 

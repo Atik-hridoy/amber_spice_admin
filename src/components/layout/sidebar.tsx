@@ -7,7 +7,8 @@ import {
   ClipboardList,
   Flame,
   LayoutGrid,
-  ShieldCheck,
+  LogOut,
+  Settings,
   Users,
   UtensilsCrossed,
 } from 'lucide-react'
@@ -39,10 +40,10 @@ export function Sidebar({
   }[] = [
     {
       id: 'kitchen',
-      label: 'Kitchen KDS',
+      label: 'Kitchen Orders',
       icon: Flame,
-      badge: activeKitchenCount > 0 ? `${activeKitchenCount} Active` : undefined,
-      badgeColor: 'bg-[#B84A22] text-white animate-pulse',
+      badge: activeKitchenCount > 0 ? `${activeKitchenCount}` : undefined,
+      badgeColor: 'bg-white/20 text-white font-bold',
     },
     {
       id: 'orders',
@@ -50,9 +51,11 @@ export function Sidebar({
       icon: ClipboardList,
     },
     {
-      id: 'tables',
-      label: 'Tables & Booking',
-      icon: CalendarDays,
+      id: 'inventory',
+      label: 'Inventory & Stock',
+      icon: Boxes,
+      badge: lowStockCount > 0 ? `${lowStockCount} Low` : undefined,
+      badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
     },
   ]
 
@@ -65,20 +68,8 @@ export function Sidebar({
   }[] = [
     {
       id: 'analytics',
-      label: 'Analytics & Sales',
+      label: 'Analytics',
       icon: BarChart3,
-    },
-    {
-      id: 'inventory',
-      label: 'Inventory & Stock',
-      icon: Boxes,
-      badge: lowStockCount > 0 ? `${lowStockCount} Low` : undefined,
-      badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-    },
-    {
-      id: 'products',
-      label: 'Products & Menu',
-      icon: UtensilsCrossed,
     },
     {
       id: 'customers',
@@ -86,9 +77,24 @@ export function Sidebar({
       icon: Users,
     },
     {
+      id: 'transactions',
+      label: 'Transactions',
+      icon: LayoutGrid,
+    },
+    {
+      id: 'products',
+      label: 'Products',
+      icon: UtensilsCrossed,
+    },
+    {
       id: 'staff',
       label: 'Staff & Roles',
       icon: ChefHat,
+    },
+    {
+      id: 'tables',
+      label: 'Tables & Booking',
+      icon: CalendarDays,
     },
   ]
 
@@ -112,31 +118,31 @@ export function Sidebar({
           isOpenMobile ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Brand Header */}
-        <div className="flex h-16 items-center justify-between border-b border-[#292524] px-5">
+        {/* Brand Header (Figma node #24057:4231) */}
+        <div className="flex h-14 items-center justify-between border-b border-[#292524]/80 px-5">
           <div className="flex items-center gap-3">
             <img
               src="/figma-assets/logo.png"
               alt="Amber Spice"
-              className="h-9 w-auto object-contain"
+              className="h-8 w-auto object-contain"
             />
             <div>
-              <span className="font-sans text-sm font-extrabold tracking-wider text-white uppercase">
+              <span className="font-sans text-[15px] font-bold tracking-tight text-white block leading-tight">
                 AMBER SPICE
               </span>
-              <p className="text-[10px] font-medium text-amber-400/90 flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Operations Portal
+              <p className="text-[11px] font-medium text-[#A8A29E] flex items-center gap-1.5 mt-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
+                <span>Staff Portal</span>
               </p>
             </div>
           </div>
         </div>
 
         {/* Scrollable Navigation */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-5">
           {/* Operations Section */}
           <div>
-            <div className="px-3 pb-2 text-[10px] font-bold tracking-wider text-stone-500 uppercase">
+            <div className="px-3 pb-1.5 text-[10.5px] font-bold tracking-[0.05em] text-[#78716C] uppercase">
               Operations
             </div>
             <div className="space-y-1">
@@ -150,18 +156,20 @@ export function Sidebar({
                     onClick={() => handleSelect(item.id)}
                     className={`group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition cursor-pointer ${
                       isActive
-                        ? 'bg-[#B84A22] text-white shadow-md'
+                        ? 'bg-[#F15A24] text-white shadow-[0px_2px_4px_-2px_rgba(241,90,36,0.25),0px_4px_6px_-1px_rgba(241,90,36,0.25)]'
                         : 'text-stone-300 hover:bg-[#1F1814] hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-stone-400 group-hover:text-amber-400'}`} />
                       <span>{item.label}</span>
                     </div>
-                    {item.badge && (
+                    {item.badge ? (
                       <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${item.badgeColor}`}>
                         {item.badge}
                       </span>
+                    ) : (
+                      isActive && <ChevronRight className="h-3.5 w-3.5 text-white/80" />
                     )}
                   </button>
                 )
@@ -171,7 +179,7 @@ export function Sidebar({
 
           {/* Management Section */}
           <div>
-            <div className="px-3 pb-2 text-[10px] font-bold tracking-wider text-stone-500 uppercase">
+            <div className="px-3 pb-1.5 text-[10.5px] font-bold tracking-[0.05em] text-[#78716C] uppercase">
               Management
             </div>
             <div className="space-y-1">
@@ -185,11 +193,11 @@ export function Sidebar({
                     onClick={() => handleSelect(item.id)}
                     className={`group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition cursor-pointer ${
                       isActive
-                        ? 'bg-[#B84A22] text-white shadow-md'
+                        ? 'bg-[#F15A24] text-white shadow-[0px_2px_4px_-2px_rgba(241,90,36,0.25),0px_4px_6px_-1px_rgba(241,90,36,0.25)]'
                         : 'text-stone-300 hover:bg-[#1F1814] hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-stone-400 group-hover:text-amber-400'}`} />
                       <span>{item.label}</span>
                     </div>
@@ -207,23 +215,40 @@ export function Sidebar({
           </div>
         </div>
 
-        {/* Staff Profile Footer */}
-        <div className="border-t border-[#292524] p-3.5 bg-[#100C0A]">
-          <div className="flex items-center justify-between">
+        {/* Staff Profile Footer Card (Figma node #24057:4376) */}
+        <div className="border-t border-[#292524]/80 p-3 bg-[#100C0A]">
+          <div className="flex items-center justify-between rounded-xl border border-[#292524] bg-[#1C1917]/90 p-2.5 shadow-xs">
             <div className="flex items-center gap-2.5">
-              <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[#B84A22] to-[#FBA138] text-xs font-bold text-white shadow-xs">
-                T
-                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 border border-[#140F0C]" />
-              </div>
+              <img
+                src="/figma-assets/about/about-chef-tariq.png"
+                alt="Tariq Al-Hassan"
+                className="h-8 w-8 rounded-lg object-cover border border-white/15 shadow-xs"
+              />
               <div>
-                <p className="text-xs font-bold text-white leading-tight">Chef Tariqul</p>
-                <p className="text-[10px] text-stone-400">Head Chef & QC</p>
+                <p className="text-xs font-semibold text-white leading-tight">
+                  Tariq Al-Hassan
+                </p>
+                <p className="text-[10px] text-[#A8A29E] mt-0.5">
+                  admin &bull; Profile
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 border border-emerald-500/20">
-              <ShieldCheck className="h-3 w-3" />
-              <span>Admin</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                title="Account Settings"
+                className="p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition cursor-pointer"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                title="Sign Out"
+                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-stone-800 transition cursor-pointer"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         </div>
