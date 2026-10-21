@@ -3,9 +3,9 @@ import {
   Eye,
   Filter,
   Search,
-  X,
 } from 'lucide-react'
 import type { Order, OrderStatus } from '../../types/admin'
+import { OrderDetailsModal } from '../kitchen/order-details-modal'
 
 interface OrdersViewProps {
   orders: Order[]
@@ -205,98 +205,12 @@ export function OrdersView({ orders, onUpdateOrderStatus }: OrdersViewProps) {
         </div>
       </div>
 
-      {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            onClick={() => setSelectedOrder(null)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-          />
-          <div className="relative z-10 w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-stone-200">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-stone-100 pb-4">
-              <div>
-                <span className="font-mono text-base font-bold text-stone-900">
-                  {selectedOrder.orderNumber}
-                </span>
-                <p className="text-xs text-stone-500">
-                  {selectedOrder.createdAt} &bull; {selectedOrder.customerName}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedOrder(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 hover:bg-stone-100 transition cursor-pointer"
-              >
-                <X className="h-4 w-4 text-stone-600" />
-              </button>
-            </div>
-
-            {/* Line Items */}
-            <div className="my-4 max-h-64 overflow-y-auto space-y-3">
-              {selectedOrder.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between rounded-xl bg-stone-50 p-3"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#B84A22] text-xs font-bold text-white">
-                      {item.quantity}x
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold text-stone-900">{item.name}</p>
-                      {item.customizations && (
-                        <p className="text-[10px] text-stone-500">
-                          {item.customizations.join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-stone-900">
-                    €{(item.price * item.quantity).toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Total and Status Details */}
-            <div className="border-t border-stone-100 pt-3 space-y-1.5 text-xs text-stone-600">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>€{(selectedOrder.totalAmount * 0.9).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>VAT (13.5%)</span>
-                <span>€{(selectedOrder.totalAmount * 0.1).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-bold text-sm text-stone-900 pt-2 border-t border-stone-200">
-                <span>Grand Total</span>
-                <span>€{selectedOrder.totalAmount.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Modal Actions */}
-            <div className="mt-5 flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  alert(`Receipt for ${selectedOrder.orderNumber} sent to printer!`)
-                }}
-                className="flex-1 rounded-xl border border-stone-200 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer"
-              >
-                Print Kitchen Docket
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedOrder(null)}
-                className="flex-1 rounded-xl bg-stone-900 py-2.5 text-xs font-semibold text-white hover:bg-stone-800 transition cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Order Details Modal (Figma node #24057:12413) */}
+      <OrderDetailsModal
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onUpdateStatus={onUpdateOrderStatus}
+      />
     </div>
   )
 }

@@ -38,6 +38,7 @@ export interface Order {
   estimatedTimeMinutes: number
   elapsedMinutes: number
   notes?: string
+  deliveryAddress?: string
 }
 
 export interface InventoryItem {

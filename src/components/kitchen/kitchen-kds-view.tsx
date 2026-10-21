@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react'
 import type { KitchenStation, Order, OrderStatus } from '../../types/admin'
+import { OrderDetailsModal } from './order-details-modal'
 
 interface KitchenKdsViewProps {
   orders: Order[]
@@ -345,9 +346,13 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                         {/* Ticket & Type */}
                         <td className="px-4 py-3.5">
                           <div>
-                            <span className="font-mono text-xs font-bold tracking-[-0.025em] text-[#1C1917] block">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrderForModal(order)}
+                              className="font-mono text-xs font-bold tracking-[-0.025em] text-[#1C1917] hover:text-[#F15A24] text-left transition cursor-pointer block"
+                            >
                               {order.orderNumber}
-                            </span>
+                            </button>
                             <div className="flex items-center gap-1 mt-0.5 text-[11px] text-[#78716C] font-medium">
                               {order.diningType === 'delivery' ? (
                                 <Bike className="h-3.5 w-3.5 text-[#78716C]" />
@@ -511,9 +516,13 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                     className="rounded-xl border border-stone-200 bg-white p-3 shadow-2xs hover:border-[#F15A24] transition"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-stone-900">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrderForModal(order)}
+                        className="font-mono text-xs font-bold text-stone-900 hover:text-[#F15A24] transition cursor-pointer text-left"
+                      >
                         {order.orderNumber}
-                      </span>
+                      </button>
                       <span className="text-[10px] font-semibold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded">
                         {order.elapsedMinutes}m ago
                       </span>
@@ -559,9 +568,13 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                     className="rounded-xl border border-stone-200 bg-white p-3 shadow-2xs hover:border-[#F15A24] transition"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-stone-900">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrderForModal(order)}
+                        className="font-mono text-xs font-bold text-stone-900 hover:text-[#F15A24] transition cursor-pointer text-left"
+                      >
                         {order.orderNumber}
-                      </span>
+                      </button>
                       <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
                         {order.elapsedMinutes}m
                       </span>
@@ -607,9 +620,13 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                     className="rounded-xl border border-stone-200 bg-white p-3 shadow-2xs hover:border-emerald-500 transition"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-stone-900">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrderForModal(order)}
+                        className="font-mono text-xs font-bold text-stone-900 hover:text-[#F15A24] transition cursor-pointer text-left"
+                      >
                         {order.orderNumber}
-                      </span>
+                      </button>
                       <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                         Ready {order.elapsedMinutes}m
                       </span>
@@ -638,73 +655,12 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
         )}
       </div>
 
-      {/* Ticket Details Modal */}
-      {selectedOrderForModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            onClick={() => setSelectedOrderForModal(null)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-          />
-          <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl border border-stone-200">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <div>
-                <span className="font-mono text-base font-bold text-stone-900">
-                  {selectedOrderForModal.orderNumber}
-                </span>
-                <p className="text-xs text-stone-500">
-                  {selectedOrderForModal.customerName} &bull; {selectedOrderForModal.diningType}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedOrderForModal(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 hover:bg-stone-100 transition cursor-pointer"
-              >
-                <X className="h-4 w-4 text-stone-600" />
-              </button>
-            </div>
-
-            <div className="my-4 space-y-2">
-              {selectedOrderForModal.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between rounded-xl bg-stone-50 p-2.5 text-xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#F15A24]">{item.quantity}&times;</span>
-                    <span className="font-semibold text-stone-900">{item.name}</span>
-                  </div>
-                  <span className="font-bold text-stone-800">
-                    €{(item.price * item.quantity).toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-stone-100 pt-3 flex justify-between items-center text-xs">
-              <span className="font-bold text-stone-900">Total: €{selectedOrderForModal.totalAmount.toFixed(2)}</span>
-              <span className="font-medium text-stone-500">Elapsed: {selectedOrderForModal.elapsedMinutes} mins</span>
-            </div>
-
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={() => alert('Docket sent to printer!')}
-                className="flex-1 rounded-xl border border-stone-200 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer"
-              >
-                Print Docket
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedOrderForModal(null)}
-                className="flex-1 rounded-xl bg-stone-900 py-2 text-xs font-semibold text-white hover:bg-stone-800 transition cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Order Details / Thermal Slip Modal (Figma node #24057:12413) */}
+      <OrderDetailsModal
+        order={selectedOrderForModal}
+        onClose={() => setSelectedOrderForModal(null)}
+        onUpdateStatus={onUpdateOrderStatus}
+      />
 
       {/* New Ticket Modal */}
       {isNewTicketOpen && (
