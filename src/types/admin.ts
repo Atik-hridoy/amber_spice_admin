@@ -8,6 +8,7 @@ export type AdminView =
   | 'customers'
   | 'staff'
   | 'transactions'
+  | 'api-tester'
 
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
 export type DiningType = 'dine-in' | 'takeaway' | 'delivery'

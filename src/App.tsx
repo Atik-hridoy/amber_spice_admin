@@ -9,6 +9,7 @@ import { InventoryView } from './components/inventory/inventory-view'
 import { ProductsView } from './components/products/products-view'
 import { CustomersView } from './components/customers/customers-view'
 import { StaffView } from './components/staff/staff-view'
+import { ApiTesterView } from './components/api-tester/api-tester-view'
 import {
   ANALYTICS_DATA,
   INITIAL_CUSTOMERS,
@@ -186,6 +187,8 @@ export default function App() {
               onUpdateOrderStatus={handleUpdateOrderStatus}
             />
           )}
+
+          {activeView === 'api-tester' && <ApiTesterView />}
         </main>
       </div>
     </div>

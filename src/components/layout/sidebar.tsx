@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   LogOut,
   Settings,
+  Terminal,
   Users,
   UtensilsCrossed,
 } from 'lucide-react'
@@ -95,6 +96,13 @@ export function Sidebar({
       id: 'tables',
       label: 'Tables & Booking',
       icon: CalendarDays,
+    },
+    {
+      id: 'api-tester',
+      label: 'API Tester (Postman)',
+      icon: Terminal,
+      badge: 'LIVE',
+      badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
     },
   ]
 
