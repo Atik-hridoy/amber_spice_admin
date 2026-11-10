@@ -413,3 +413,4 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
     </div>
   )
 }
+

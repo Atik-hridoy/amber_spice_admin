@@ -166,6 +166,14 @@ export default function App() {
     )
   }
 
+  const handleAddStaffMember = (newMember: StaffMember) => {
+    setStaff((prev) => [newMember, ...prev])
+  }
+
+  const handleDeleteStaffMember = (staffId: string) => {
+    setStaff((prev) => prev.filter((s) => s.id !== staffId))
+  }
+
   if (!currentUser) {
     return <AdminLoginView onLoginSuccess={setCurrentUser} />
   }
@@ -259,6 +267,8 @@ export default function App() {
             <StaffView
               staff={staff}
               onUpdateStaffStatus={handleUpdateStaffStatus}
+              onAddStaffMember={handleAddStaffMember}
+              onDeleteStaffMember={handleDeleteStaffMember}
             />
           )}
 

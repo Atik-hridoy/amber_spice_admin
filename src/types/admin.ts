@@ -136,11 +136,14 @@ export interface Customer {
 export interface StaffMember {
   id: string
   name: string
-  role: 'Head Chef' | 'Sous Chef' | 'Station Cook' | 'Floor Manager' | 'Host' | 'Server'
-  shift: 'Morning (10:00 - 16:00)' | 'Evening (16:00 - 23:00)' | 'Full Day'
+  role: 'General Manager' | 'Floor Manager' | 'Head Chef' | 'Sous Chef' | 'Station Cook' | 'Host' | 'Server' | 'Cashier' | 'Delivery Rider' | 'Super Admin' | 'Branch Admin' | string
+  shift: 'Morning (10:00 - 16:00)' | 'Evening (16:00 - 23:00)' | 'Full Day' | string
   status: 'active' | 'break' | 'off-duty'
   avatar: string
   assignedSection: string
+  email?: string
+  phone?: string
+  systemRole?: 'super_admin' | 'admin' | 'manager' | 'kitchen_staff' | 'delivery_staff' | 'cashier_front' | 'customer' | string
 }
 
 export interface AnalyticsSummary {
