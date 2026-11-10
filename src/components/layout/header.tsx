@@ -3,16 +3,22 @@ import {
   Bell,
   CheckCircle2,
   Clock,
+  LogOut,
   Menu,
   RotateCw,
   Search,
+  ShieldCheck,
   Sparkles,
 } from 'lucide-react'
+import type { AdminUser } from '../../types/admin'
+
 interface HeaderProps {
   onOpenMobileSidebar: () => void
   searchQuery: string
   onSearchChange: (query: string) => void
   activeOrdersCount: number
+  currentUser?: AdminUser | null
+  onLogout?: () => void
 }
 
 export function Header({
@@ -20,12 +26,18 @@ export function Header({
   searchQuery,
   onSearchChange,
   activeOrdersCount,
+  currentUser,
+  onLogout,
 }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false)
-  const [selectedRole, setSelectedRole] = useState('Admin (Manager)')
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [selectedRole, setSelectedRole] = useState(
+    currentUser?.role === 'super_admin' ? 'Super Admin' : 'Admin (Manager)'
+  )
   const [showRoleDropdown, setShowRoleDropdown] = useState(false)
 
   const roles = [
+    'Super Admin',
     'Admin (Manager)',
     'Head Chef',
     'Line Supervisor',
@@ -160,17 +172,63 @@ export function Header({
           )}
         </div>
 
-        {/* Profile Link: Tariq (Figma node #24057:4437) */}
-        <div className="flex h-8 items-center gap-1.5 rounded-lg border border-[#E7E5E4] bg-white px-2.5 py-1 hover:bg-stone-50 transition cursor-pointer">
-          <img
-            src="/figma-assets/about/about-chef-tariq.png"
-            alt="Tariq"
-            className="h-5 w-5 rounded-md object-cover border border-[#E7E5E4]"
-          />
-          <span className="text-xs font-semibold text-[#292524]">Tariq</span>
+        {/* Profile Link with Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className="flex h-8 items-center gap-2 rounded-lg border border-[#E7E5E4] bg-white px-2.5 py-1 hover:bg-stone-50 transition cursor-pointer"
+          >
+            <img
+              src={currentUser?.avatar || '/figma-assets/about/about-chef-tariq.png'}
+              alt={currentUser?.fullName || 'Admin User'}
+              className="h-5 w-5 rounded-md object-cover border border-[#E7E5E4]"
+            />
+            <span className="text-xs font-semibold text-[#292524] max-w-[120px] truncate">
+              {currentUser?.fullName?.split(' ')[0] || 'Tariq'}
+            </span>
+            {currentUser?.role === 'super_admin' && (
+              <span className="hidden xl:inline-flex items-center gap-1 rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[9px] font-black text-amber-700">
+                <ShieldCheck className="h-2.5 w-2.5 text-amber-600" />
+                SUPER ADMIN
+              </span>
+            )}
+          </button>
+
+          {showProfileMenu && (
+            <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-[#E7E5E4] bg-white p-3 shadow-xl z-50">
+              <div className="border-b border-stone-100 pb-2 mb-2">
+                <p className="text-xs font-bold text-stone-900 leading-tight">
+                  {currentUser?.fullName || 'Super Admin'}
+                </p>
+                <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                  {currentUser?.email || 'superadmin@amberspice.com'}
+                </p>
+                <div className="mt-1.5">
+                  <span className="inline-block rounded-full bg-gradient-to-r from-[#B84A22] to-[#FBA138] px-2 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+                    {currentUser?.roleDisplay || 'Whole Admin Manager'}
+                  </span>
+                </div>
+              </div>
+
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProfileMenu(false)
+                    onLogout()
+                  }}
+                  className="w-full flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>Sign Out / Lock Portal</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Settings/Options Action Button (Figma node #24057:4441) */}
+        {/* Settings/Options Action Button */}
         <button
           type="button"
           aria-label="Settings"

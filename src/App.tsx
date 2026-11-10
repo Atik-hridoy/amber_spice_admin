@@ -11,6 +11,7 @@ import { PromotionsView } from './components/promotions/promotions-view'
 import { CustomersView } from './components/customers/customers-view'
 import { StaffView } from './components/staff/staff-view'
 import { ApiTesterView } from './components/api-tester/api-tester-view'
+import { AdminLoginView } from './components/auth/admin-login-view'
 import {
   ANALYTICS_DATA,
   INITIAL_CUSTOMERS,
@@ -22,6 +23,7 @@ import {
   INITIAL_TABLES,
 } from './data/mock-admin-data'
 import type {
+  AdminUser,
   AdminView,
   Customer,
   InventoryItem,
@@ -35,6 +37,15 @@ import type {
 } from './types/admin'
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
+    try {
+      const saved = localStorage.getItem('amber_admin_user')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
+
   const [activeView, setActiveView] = useState<AdminView>('kitchen')
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS)
   const [tables, setTables] = useState<TableItem[]>(INITIAL_TABLES)
@@ -46,6 +57,17 @@ export default function App() {
   const [customers] = useState<Customer[]>(INITIAL_CUSTOMERS)
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('amber_admin_token')
+      localStorage.removeItem('amber_admin_refresh')
+      localStorage.removeItem('amber_admin_user')
+    } catch {
+      // ignore
+    }
+    setCurrentUser(null)
+  }
 
   // Derived counts
   const activeKitchenCount = orders.filter(
@@ -144,6 +166,10 @@ export default function App() {
     )
   }
 
+  if (!currentUser) {
+    return <AdminLoginView onLoginSuccess={setCurrentUser} />
+  }
+
   return (
     <div className="min-h-screen bg-[#FBF9F7] text-[#1A130E] flex">
       {/* Collapsible Left Sidebar */}
@@ -154,6 +180,8 @@ export default function App() {
         lowStockCount={lowStockCount}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Main Container Area */}
@@ -164,6 +192,8 @@ export default function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           activeOrdersCount={activeKitchenCount}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
 
         {/* Dynamic Page Content */}

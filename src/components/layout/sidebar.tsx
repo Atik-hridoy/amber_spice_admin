@@ -14,7 +14,7 @@ import {
   Users,
   UtensilsCrossed,
 } from 'lucide-react'
-import type { AdminView } from '../../types/admin'
+import type { AdminUser, AdminView } from '../../types/admin'
 
 interface SidebarProps {
   activeView: AdminView
@@ -23,6 +23,8 @@ interface SidebarProps {
   lowStockCount: number
   isOpenMobile: boolean
   onCloseMobile: () => void
+  currentUser?: AdminUser | null
+  onLogout?: () => void
 }
 
 export function Sidebar({
@@ -32,6 +34,8 @@ export function Sidebar({
   lowStockCount,
   isOpenMobile,
   onCloseMobile,
+  currentUser,
+  onLogout,
 }: SidebarProps) {
   const operationsNav: {
     id: AdminView
@@ -234,16 +238,16 @@ export function Sidebar({
           <div className="flex items-center justify-between rounded-xl border border-[#292524] bg-[#1C1917]/90 p-2.5 shadow-xs">
             <div className="flex items-center gap-2.5">
               <img
-                src="/figma-assets/about/about-chef-tariq.png"
-                alt="Tariq Al-Hassan"
+                src={currentUser?.avatar || '/figma-assets/about/about-chef-tariq.png'}
+                alt={currentUser?.fullName || 'Tariq Al-Hassan'}
                 className="h-8 w-8 rounded-lg object-cover border border-white/15 shadow-xs"
               />
-              <div>
-                <p className="text-xs font-semibold text-white leading-tight">
-                  Tariq Al-Hassan
+              <div className="min-w-0 max-w-[125px]">
+                <p className="text-xs font-semibold text-white leading-tight truncate">
+                  {currentUser?.fullName || 'Tariq Al-Hassan'}
                 </p>
-                <p className="text-[10px] text-[#A8A29E] mt-0.5">
-                  admin &bull; Profile
+                <p className="text-[10px] text-amber-400 font-medium truncate mt-0.5">
+                  {currentUser?.roleDisplay || 'admin • Profile'}
                 </p>
               </div>
             </div>
@@ -256,13 +260,16 @@ export function Sidebar({
               >
                 <Settings className="h-3.5 w-3.5" />
               </button>
-              <button
-                type="button"
-                title="Sign Out"
-                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-stone-800 transition cursor-pointer"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  title="Sign Out of Portal"
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-stone-800 transition cursor-pointer"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>

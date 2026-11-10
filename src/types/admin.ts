@@ -152,3 +152,18 @@ export interface AnalyticsSummary {
   averagePrepTimeMinutes: number
   topSellingDishes: { name: string; sales: number; revenue: number }[]
 }
+
+export interface AdminUser {
+  id: number
+  uuid: string
+  username: string
+  email: string
+  fullName: string
+  role: 'super_admin' | 'admin' | 'manager' | 'kitchen_staff' | 'delivery_staff' | 'cashier_front' | string
+  roleDisplay: string
+  avatar?: string | null
+  phone?: string | null
+  isStaff: boolean
+  isSuperAdmin?: boolean
+  permissions: string[]
+}
