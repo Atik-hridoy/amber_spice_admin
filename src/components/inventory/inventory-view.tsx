@@ -3,18 +3,26 @@ import {
   AlertTriangle,
   PackagePlus,
   Search,
+  Trash2,
   Truck,
+  X,
 } from 'lucide-react'
-import type { InventoryItem } from '../../types/admin'
+import type { InventoryItem, WastageRecord } from '../../types/admin'
 
 interface InventoryViewProps {
   inventory: InventoryItem[]
   onRestockItem: (itemId: string, addAmount: number) => void
+  onLogWastage?: (record: WastageRecord) => void
 }
 
-export function InventoryView({ inventory, onRestockItem }: InventoryViewProps) {
+export function InventoryView({ inventory, onRestockItem, onLogWastage }: InventoryViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [isWastageModalOpen, setIsWastageModalOpen] = useState(false)
+  const [selectedIngredientId, setSelectedIngredientId] = useState(inventory[0]?.id || '')
+  const [wasteQuantity, setWasteQuantity] = useState(1.0)
+  const [wasteReason, setWasteReason] = useState<'Expired' | 'Damaged in transit' | 'Kitchen prep error' | 'Storage defect / Spoilage'>('Kitchen prep error')
+  const [wasteReporter, setWasteReporter] = useState('Master Chef Tariqul')
 
   const filteredInventory = inventory.filter((item) => {
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory
@@ -89,6 +97,15 @@ export function InventoryView({ inventory, onRestockItem }: InventoryViewProps) 
               </button>
             )
           )}
+
+          <button
+            type="button"
+            onClick={() => setIsWastageModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:border-red-300 hover:text-red-600 transition cursor-pointer shrink-0"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Log Wastage</span>
+          </button>
         </div>
       </div>
 
@@ -189,6 +206,123 @@ export function InventoryView({ inventory, onRestockItem }: InventoryViewProps) 
           </table>
         </div>
       </div>
+      {/* Wastage Modal */}
+      {isWastageModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            onClick={() => setIsWastageModalOpen(false)}
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+          />
+
+          <div className="relative z-10 w-full max-w-[480px] rounded-2xl bg-white border border-[#E7E5E4] shadow-xl overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#F5F5F4]">
+              <h3 className="font-sans text-base font-semibold text-[#1C1917]">
+                Record Ingredient Wastage
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsWastageModalOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const target = inventory.find((i) => i.id === selectedIngredientId) || inventory[0]
+                if (!target) return
+                if (onLogWastage) {
+                  onLogWastage({
+                    id: `wst-${Date.now()}`,
+                    ingredientId: target.id,
+                    ingredientName: target.name,
+                    quantity: Number(wasteQuantity),
+                    unit: target.unit,
+                    reason: wasteReason,
+                    reportedBy: wasteReporter,
+                    timestamp: 'Just now',
+                  })
+                }
+                onRestockItem(target.id, -Number(wasteQuantity))
+                setIsWastageModalOpen(false)
+              }}
+              className="p-5 space-y-3.5 text-xs"
+            >
+              <div>
+                <label className="font-medium text-stone-700 block mb-1">Ingredient</label>
+                <select
+                  value={selectedIngredientId}
+                  onChange={(e) => setSelectedIngredientId(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 bg-white p-2.5 text-stone-900 focus:outline-none"
+                >
+                  {inventory.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} ({item.currentStock} {item.unit} in stock)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-medium text-stone-700 block mb-1">Quantity Lost</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    required
+                    value={wasteQuantity}
+                    onChange={(e) => setWasteQuantity(Number(e.target.value))}
+                    className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] p-2.5 text-stone-900 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-medium text-stone-700 block mb-1">Loss Reason</label>
+                  <select
+                    value={wasteReason}
+                    onChange={(e) => setWasteReason(e.target.value as any)}
+                    className="w-full rounded-xl border border-stone-200 bg-white p-2.5 text-stone-900 focus:outline-none"
+                  >
+                    <option value="Expired">Expired</option>
+                    <option value="Kitchen prep error">Kitchen prep error</option>
+                    <option value="Damaged in transit">Damaged in transit</option>
+                    <option value="Storage defect / Spoilage">Storage defect / Spoilage</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-medium text-stone-700 block mb-1">Reported by</label>
+                <input
+                  type="text"
+                  value={wasteReporter}
+                  onChange={(e) => setWasteReporter(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] p-2.5 text-stone-900 focus:outline-none"
+                />
+              </div>
+
+              <div className="mt-5 flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setIsWastageModalOpen(false)}
+                  className="rounded-xl border border-stone-200 px-4 py-2 font-medium text-stone-700 hover:bg-stone-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-red-600 px-5 py-2 font-bold text-white shadow-xs hover:bg-red-700 cursor-pointer"
+                >
+                  Record & Deduct
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

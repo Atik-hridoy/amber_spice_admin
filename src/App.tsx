@@ -7,6 +7,7 @@ import { TablesView } from './components/tables/tables-view'
 import { AnalyticsView } from './components/analytics/analytics-view'
 import { InventoryView } from './components/inventory/inventory-view'
 import { ProductsView } from './components/products/products-view'
+import { PromotionsView } from './components/promotions/promotions-view'
 import { CustomersView } from './components/customers/customers-view'
 import { StaffView } from './components/staff/staff-view'
 import { ApiTesterView } from './components/api-tester/api-tester-view'
@@ -16,6 +17,7 @@ import {
   INITIAL_INVENTORY,
   INITIAL_MENU_ITEMS,
   INITIAL_ORDERS,
+  INITIAL_PROMOTIONS,
   INITIAL_STAFF,
   INITIAL_TABLES,
 } from './data/mock-admin-data'
@@ -26,8 +28,10 @@ import type {
   MenuItem,
   Order,
   OrderStatus,
+  Promotion,
   StaffMember,
   TableItem,
+  WastageRecord,
 } from './types/admin'
 
 export default function App() {
@@ -36,6 +40,8 @@ export default function App() {
   const [tables, setTables] = useState<TableItem[]>(INITIAL_TABLES)
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY)
   const [menuItems, setMenuItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS)
+  const [promotions, setPromotions] = useState<Promotion[]>(INITIAL_PROMOTIONS)
+  const [, setWastageRecords] = useState<WastageRecord[]>([])
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF)
   const [customers] = useState<Customer[]>(INITIAL_CUSTOMERS)
   const [searchQuery, setSearchQuery] = useState('')
@@ -76,12 +82,12 @@ export default function App() {
     setInventory((prev) =>
       prev.map((item) => {
         if (item.id === itemId) {
-          const newStock = item.currentStock + addAmount
+          const newStock = Math.max(0, item.currentStock + addAmount)
           return {
             ...item,
             currentStock: newStock,
             status: newStock >= item.minimumStock ? 'optimal' : 'low',
-            lastRestocked: 'Just now',
+            lastRestocked: addAmount > 0 ? 'Just now' : item.lastRestocked,
           }
         }
         return item
@@ -89,11 +95,43 @@ export default function App() {
     )
   }
 
+  const handleLogWastage = (record: WastageRecord) => {
+    setWastageRecords((prev) => [record, ...prev])
+  }
+
   const handleToggleAvailability = (itemId: string) => {
     setMenuItems((prev) =>
       prev.map((item) =>
         item.id === itemId ? { ...item, isAvailable: !item.isAvailable } : item
       )
+    )
+  }
+
+  const handleAddDish = (dish: MenuItem) => {
+    setMenuItems((prev) => [dish, ...prev])
+  }
+
+  const handleUpdateDish = (dish: MenuItem) => {
+    setMenuItems((prev) => prev.map((item) => (item.id === dish.id ? dish : item)))
+  }
+
+  const handleAddPromotion = (promo: Promotion) => {
+    setPromotions((prev) => [promo, ...prev])
+  }
+
+  const handleUpdatePromotion = (promo: Promotion) => {
+    setPromotions((prev) => prev.map((p) => (p.id === promo.id ? promo : p)))
+  }
+
+  const handleDeletePromotion = (id: string) => {
+    if (confirm('Are you sure you want to delete this promotion voucher?')) {
+      setPromotions((prev) => prev.filter((p) => p.id !== id))
+    }
+  }
+
+  const handleTogglePromotionStatus = (id: string) => {
+    setPromotions((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
     )
   }
 
@@ -160,6 +198,7 @@ export default function App() {
             <InventoryView
               inventory={inventory}
               onRestockItem={handleRestockItem}
+              onLogWastage={handleLogWastage}
             />
           )}
 
@@ -167,6 +206,18 @@ export default function App() {
             <ProductsView
               items={menuItems}
               onToggleAvailability={handleToggleAvailability}
+              onAddDish={handleAddDish}
+              onUpdateDish={handleUpdateDish}
+            />
+          )}
+
+          {activeView === 'promotions' && (
+            <PromotionsView
+              promotions={promotions}
+              onAddPromotion={handleAddPromotion}
+              onUpdatePromotion={handleUpdatePromotion}
+              onDeletePromotion={handleDeletePromotion}
+              onToggleStatus={handleTogglePromotionStatus}
             />
           )}
 

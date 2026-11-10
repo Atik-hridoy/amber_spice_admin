@@ -5,12 +5,20 @@ export type AdminView =
   | 'analytics'
   | 'inventory'
   | 'products'
+  | 'promotions'
   | 'customers'
   | 'staff'
   | 'transactions'
   | 'api-tester'
 
-export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+export type OrderStatus =
+  | 'pending'
+  | 'preparing'
+  | 'ready'
+  | 'out-for-delivery'
+  | 'delivered'
+  | 'cancelled'
+
 export type DiningType = 'dine-in' | 'takeaway' | 'delivery'
 export type KitchenStation = 'all' | 'biryani' | 'curry' | 'grill' | 'breads' | 'dessert'
 
@@ -21,6 +29,14 @@ export interface OrderItem {
   price: number
   station: 'biryani' | 'curry' | 'grill' | 'breads' | 'dessert'
   customizations?: string[]
+}
+
+export interface DeliveryDriver {
+  id: string
+  name: string
+  phone: string
+  vehicle: 'E-Bike' | 'Scooter' | 'Car'
+  status: 'available' | 'on-delivery'
 }
 
 export interface Order {
@@ -40,6 +56,7 @@ export interface Order {
   elapsedMinutes: number
   notes?: string
   deliveryAddress?: string
+  assignedDriver?: DeliveryDriver
 }
 
 export interface InventoryItem {
@@ -52,6 +69,18 @@ export interface InventoryItem {
   status: 'optimal' | 'low' | 'critical'
   lastRestocked: string
   supplier: string
+  costPerUnit?: number
+}
+
+export interface WastageRecord {
+  id: string
+  ingredientId: string
+  ingredientName: string
+  quantity: number
+  unit: string
+  reason: 'Expired' | 'Damaged in transit' | 'Kitchen prep error' | 'Storage defect / Spoilage'
+  reportedBy: string
+  timestamp: string
 }
 
 export interface MenuItem {
@@ -65,6 +94,22 @@ export interface MenuItem {
   rating: number
   ordersCount: number
   spicyLevel?: 1 | 2 | 3
+  recipeCost?: number
+}
+
+export interface Promotion {
+  id: string
+  code: string
+  title: string
+  description: string
+  discountType: 'percentage' | 'fixed'
+  discountValue: number
+  minSpend: number
+  validUntil: string
+  usageLimit: number
+  usageCount: number
+  isActive: boolean
+  badge: string
 }
 
 export interface TableItem {

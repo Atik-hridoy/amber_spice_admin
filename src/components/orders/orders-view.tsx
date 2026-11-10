@@ -73,6 +73,7 @@ export function OrdersView({ orders, onUpdateOrderStatus }: OrdersViewProps) {
             <option value="pending">Pending</option>
             <option value="preparing">Cooking</option>
             <option value="ready">Ready to Serve</option>
+            <option value="out-for-delivery">Out for Delivery</option>
             <option value="delivered">Delivered / Completed</option>
           </select>
         </div>
@@ -106,6 +107,7 @@ export function OrdersView({ orders, onUpdateOrderStatus }: OrdersViewProps) {
                     pending: 'bg-stone-100 text-stone-700',
                     preparing: 'bg-amber-100 text-amber-800 border-amber-200',
                     ready: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                    'out-for-delivery': 'bg-purple-100 text-purple-800 border-purple-200',
                     delivered: 'bg-blue-50 text-blue-700',
                     cancelled: 'bg-red-50 text-red-700',
                   }
@@ -152,7 +154,7 @@ export function OrdersView({ orders, onUpdateOrderStatus }: OrdersViewProps) {
                           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold capitalize border ${statusColors[order.status]}`}
                         >
                           <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                          {order.status}
+                          {order.status === 'out-for-delivery' ? 'Out for Delivery' : order.status}
                         </span>
                       </td>
 
@@ -188,10 +190,24 @@ export function OrdersView({ orders, onUpdateOrderStatus }: OrdersViewProps) {
                           {order.status === 'ready' && (
                             <button
                               type="button"
-                              onClick={() => onUpdateOrderStatus(order.id, 'delivered')}
+                              onClick={() =>
+                                onUpdateOrderStatus(
+                                  order.id,
+                                  order.diningType === 'delivery' ? 'out-for-delivery' : 'delivered'
+                                )
+                              }
                               className="rounded-lg bg-stone-900 px-2.5 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-stone-800 transition cursor-pointer"
                             >
-                              Done
+                              {order.diningType === 'delivery' ? 'Dispatch' : 'Done'}
+                            </button>
+                          )}
+                          {order.status === 'out-for-delivery' && (
+                            <button
+                              type="button"
+                              onClick={() => onUpdateOrderStatus(order.id, 'delivered')}
+                              className="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-emerald-700 transition cursor-pointer"
+                            >
+                              Delivered
                             </button>
                           )}
                         </div>

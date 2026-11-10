@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   LogOut,
   Settings,
+  Tag,
   Terminal,
   Users,
   UtensilsCrossed,
@@ -86,6 +87,11 @@ export function Sidebar({
       id: 'products',
       label: 'Products',
       icon: UtensilsCrossed,
+    },
+    {
+      id: 'promotions',
+      label: 'Promotions',
+      icon: Tag,
     },
     {
       id: 'staff',
