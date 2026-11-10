@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import {
+  CheckCircle2,
   Eye,
   Filter,
+  Flame,
   Search,
 } from 'lucide-react'
 import type { Order, OrderStatus } from '../../types/admin'
@@ -10,13 +12,26 @@ import { OrderDetailsModal } from '../kitchen/order-details-modal'
 interface OrdersViewProps {
   orders: Order[]
   onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => void
+  onForwardToChef?: (order: Order) => void
 }
 
-export function OrdersView({ orders, onUpdateOrderStatus }: OrdersViewProps) {
+export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef }: OrdersViewProps) {
   const [selectedDiningType, setSelectedDiningType] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [forwardToast, setForwardToast] = useState<string | null>(null)
+
+  const handleForwardOrder = (order: Order) => {
+    onUpdateOrderStatus(order.id, 'preparing')
+    if (onForwardToChef) {
+      onForwardToChef(order)
+    }
+    setForwardToast(`Order ${order.orderNumber} forwarded to Chef Marco's kitchen prep queue!`)
+    setTimeout(() => {
+      setForwardToast(null)
+    }, 3500)
+  }
 
   const filteredOrders = orders.filter((order) => {
     const matchesDining = selectedDiningType === 'all' || order.diningType === selectedDiningType
@@ -32,6 +47,14 @@ export function OrdersView({ orders, onUpdateOrderStatus }: OrdersViewProps) {
 
   return (
     <div className="space-y-6">
+      {/* Real-time Order Forwarding Toast */}
+      {forwardToast && (
+        <div className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-3 text-white shadow-lg animate-in fade-in slide-in-from-top-2">
+          <CheckCircle2 className="h-5 w-5 shrink-0" />
+          <p className="text-xs font-bold">{forwardToast}</p>
+        </div>
+      )}
+
       {/* Filters and Search Bar */}
       <div className="flex flex-col gap-4 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
         {/* Search */}
@@ -172,10 +195,12 @@ export function OrdersView({ orders, onUpdateOrderStatus }: OrdersViewProps) {
                           {order.status === 'pending' && (
                             <button
                               type="button"
-                              onClick={() => onUpdateOrderStatus(order.id, 'preparing')}
-                              className="rounded-lg bg-[#B84A22] px-2.5 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-[#9E3E1C] transition cursor-pointer"
+                              onClick={() => handleForwardOrder(order)}
+                              className="rounded-lg bg-[#B84A22] px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#9E3E1C] active:scale-95 transition cursor-pointer flex items-center gap-1.5"
+                              title="Forward order to Chef's prep station"
                             >
-                              Cook
+                              <Flame className="h-3 w-3 text-amber-300" />
+                              <span>Forward to Chef 👨‍🍳</span>
                             </button>
                           )}
                           {order.status === 'preparing' && (

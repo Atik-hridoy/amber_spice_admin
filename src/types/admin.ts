@@ -136,14 +136,26 @@ export interface Customer {
 export interface StaffMember {
   id: string
   name: string
-  role: 'General Manager' | 'Floor Manager' | 'Head Chef' | 'Sous Chef' | 'Station Cook' | 'Host' | 'Server' | 'Cashier' | 'Delivery Rider' | 'Super Admin' | 'Branch Admin' | string
+  role: 'General Manager' | 'Floor Manager' | 'Operations Staff' | 'Head Chef' | 'Sous Chef' | 'Station Cook' | 'Host' | 'Server' | 'Cashier' | 'Delivery Rider' | 'Super Admin' | 'Branch Admin' | string
   shift: 'Morning (10:00 - 16:00)' | 'Evening (16:00 - 23:00)' | 'Full Day' | string
   status: 'active' | 'break' | 'off-duty'
   avatar: string
   assignedSection: string
   email?: string
   phone?: string
-  systemRole?: 'super_admin' | 'admin' | 'manager' | 'kitchen_staff' | 'delivery_staff' | 'cashier_front' | 'customer' | string
+  systemRole?: 'super_admin' | 'admin' | 'manager' | 'staff' | 'chef' | 'kitchen_staff' | 'delivery_staff' | 'cashier_front' | 'customer' | string
+}
+
+export interface SystemAlert {
+  id: string
+  title: string
+  message: string
+  type: 'stock_low' | 'stock_critical' | 'order_pending' | 'order_forwarded' | 'order_ready'
+  timestamp: string
+  senderRole?: 'chef' | 'staff' | 'manager' | 'system'
+  senderName?: string
+  ingredientId?: string
+  read?: boolean
 }
 
 export interface AnalyticsSummary {
@@ -162,7 +174,7 @@ export interface AdminUser {
   username: string
   email: string
   fullName: string
-  role: 'super_admin' | 'admin' | 'manager' | 'kitchen_staff' | 'delivery_staff' | 'cashier_front' | string
+  role: 'super_admin' | 'admin' | 'manager' | 'staff' | 'chef' | 'kitchen_staff' | 'delivery_staff' | 'cashier_front' | string
   roleDisplay: string
   avatar?: string | null
   phone?: string | null

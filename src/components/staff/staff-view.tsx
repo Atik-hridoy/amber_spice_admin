@@ -25,15 +25,11 @@ interface StaffViewProps {
 const BACKEND_BASE_URL = 'http://127.0.0.1:8000'
 
 const AVAILABLE_ROLES = [
-  { id: 'manager', label: 'Floor / Operations Manager', category: 'manager', badge: 'bg-amber-500/15 text-amber-800 border-amber-300' },
-  { id: 'general_manager', label: 'General Manager (Store Head)', category: 'manager', badge: 'bg-amber-500/15 text-amber-800 border-amber-300' },
-  { id: 'admin', label: 'Branch Admin / Co-Owner', category: 'admin', badge: 'bg-rose-500/15 text-rose-800 border-rose-300' },
-  { id: 'super_admin', label: 'Super Admin (Whole Manager)', category: 'admin', badge: 'bg-purple-500/15 text-purple-800 border-purple-300' },
-  { id: 'head_chef', label: 'Head Chef', category: 'kitchen', badge: 'bg-orange-500/15 text-orange-800 border-orange-300' },
-  { id: 'sous_chef', label: 'Sous Chef', category: 'kitchen', badge: 'bg-orange-500/15 text-orange-800 border-orange-300' },
-  { id: 'station_cook', label: 'Station Cook', category: 'kitchen', badge: 'bg-orange-500/15 text-orange-800 border-orange-300' },
-  { id: 'cashier', label: 'Cashier / Front Desk Host', category: 'front', badge: 'bg-blue-500/15 text-blue-800 border-blue-300' },
-  { id: 'server', label: 'Table Server', category: 'front', badge: 'bg-blue-500/15 text-blue-800 border-blue-300' },
+  { id: 'manager', label: 'General Manager (Whole Access)', category: 'manager', badge: 'bg-amber-500/15 text-amber-800 border-amber-300' },
+  { id: 'staff', label: 'Operations Staff (Inventory, Dishes & Orders)', category: 'staff', badge: 'bg-blue-500/15 text-blue-800 border-blue-300' },
+  { id: 'chef', label: 'Executive Chef (Kitchen KDS & Orders)', category: 'kitchen', badge: 'bg-orange-500/15 text-orange-800 border-orange-300' },
+  { id: 'super_admin', label: 'Super Admin (System Owner)', category: 'admin', badge: 'bg-purple-500/15 text-purple-800 border-purple-300' },
+  { id: 'cashier', label: 'Cashier / Front Host', category: 'front', badge: 'bg-stone-500/15 text-stone-800 border-stone-300' },
   { id: 'delivery', label: 'Delivery Courier / Driver', category: 'delivery', badge: 'bg-emerald-500/15 text-emerald-800 border-emerald-300' },
 ]
 
@@ -92,14 +88,25 @@ export function StaffView({
 
   const handleRoleSelect = (roleItem: typeof AVAILABLE_ROLES[0]) => {
     let defaultSection = 'Operations & Floor Management'
-    if (roleItem.category === 'kitchen') {
-      defaultSection = 'Executive Kitchen & Tandoor Station'
+    let defaultPass = 'Staff@2026!'
+    if (roleItem.category === 'kitchen' || roleItem.id === 'chef') {
+      defaultSection = 'Executive Kitchen & Orders KDS'
+      defaultPass = 'Chef@2026!'
+    } else if (roleItem.category === 'staff' || roleItem.id === 'staff') {
+      defaultSection = 'Inventory & Dishes Management'
+      defaultPass = 'Staff@2026!'
     } else if (roleItem.category === 'front') {
       defaultSection = 'Front Desk & Cashier POS'
+      defaultPass = 'Staff@2026!'
     } else if (roleItem.category === 'delivery') {
       defaultSection = 'Delivery & Logistics'
+      defaultPass = 'Staff@2026!'
+    } else if (roleItem.category === 'manager' || roleItem.id === 'manager') {
+      defaultSection = 'Whole Operations & Store Management'
+      defaultPass = 'Manager@2026!'
     } else if (roleItem.category === 'admin') {
       defaultSection = 'Executive Administration & Management'
+      defaultPass = 'Admin@2026!'
     }
 
     setFormData((prev) => ({
@@ -107,7 +114,7 @@ export function StaffView({
       role: roleItem.label,
       systemRole: roleItem.id,
       assignedSection: defaultSection,
-      password: roleItem.category === 'manager' ? 'Manager@2026!' : roleItem.category === 'admin' ? 'Admin@2026!' : 'Staff@2026!',
+      password: defaultPass,
     }))
   }
 

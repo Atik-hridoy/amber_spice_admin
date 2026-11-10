@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  AlertTriangle,
   Bike,
   Check,
   CheckCircle2,
@@ -21,9 +22,21 @@ interface KitchenKdsViewProps {
   orders: Order[]
   onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => void
   onAddTicket?: (order: Order) => void
+  onReportLowStock?: (alert: {
+    ingredientName: string
+    stockRemainingPercent: number
+    note: string
+  }) => void
+  inventoryList?: { id: string; name: string; currentStock: number; unit: string }[]
 }
 
-export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: KitchenKdsViewProps) {
+export function KitchenKdsView({
+  orders,
+  onUpdateOrderStatus,
+  onAddTicket,
+  onReportLowStock,
+  inventoryList = [],
+}: KitchenKdsViewProps) {
   const [selectedStation, setSelectedStation] = useState<KitchenStation>('all')
   const [selectedServiceType, setSelectedServiceType] = useState<'all' | 'delivery' | 'takeaway'>('all')
   const [viewMode, setViewMode] = useState<'table' | 'board'>('table')
@@ -31,6 +44,13 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<Order | null>(null)
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false)
+
+  // Stock alert modal state (Chef alerts Manager & Staff)
+  const [isStockAlertModalOpen, setIsStockAlertModalOpen] = useState(false)
+  const [selectedIngredient, setSelectedIngredient] = useState('Pure Saffron Threads (Kashmir Super Negin)')
+  const [stockRemainingPercent, setStockRemainingPercent] = useState(20)
+  const [stockAlertNote, setStockAlertNote] = useState('')
+  const [stockAlertSuccess, setStockAlertSuccess] = useState<string | null>(null)
 
   // New ticket form state
   const [newCustomerName, setNewCustomerName] = useState('')
@@ -113,6 +133,25 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
     setNewCustomerName('')
   }
 
+  const handleSendStockAlert = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (onReportLowStock) {
+      onReportLowStock({
+        ingredientName: selectedIngredient,
+        stockRemainingPercent,
+        note:
+          stockAlertNote.trim() ||
+          `Chef flagged: ${selectedIngredient} is running out soon (~${stockRemainingPercent}% left). Restock needed before rush.`,
+      })
+    }
+    setStockAlertSuccess(`Alert sent to Staff & Manager for "${selectedIngredient}"!`)
+    setTimeout(() => {
+      setStockAlertSuccess(null)
+      setIsStockAlertModalOpen(false)
+      setStockAlertNote('')
+    }, 1800)
+  }
+
   return (
     <div className="space-y-4">
       {/* 1. Header Section (Figma node #24057:4450) */}
@@ -126,14 +165,25 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsNewTicketOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#F15A24] px-3.5 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:brightness-105 active:scale-95 transition cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>New Ticket</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setIsStockAlertModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3.5 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-500/20 active:scale-95 transition cursor-pointer"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+            <span>⚠️ Report Stock Running Low</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsNewTicketOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#F15A24] px-3.5 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:brightness-105 active:scale-95 transition cursor-pointer"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>New Ticket</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. Search & Filter Bar Card (Figma node #24057:4468) */}
@@ -779,6 +829,130 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Chef Stock-Running-Low Alert Modal */}
+      {isStockAlertModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-stone-200">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-amber-500/15 text-amber-700">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-sm">
+                    Report Stock Running Low
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    Notify Operations Staff &amp; Manager before stock runs out
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsStockAlertModalOpen(false)}
+                className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {stockAlertSuccess ? (
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 text-xs text-center space-y-1">
+                <CheckCircle2 className="h-6 w-6 text-emerald-600 mx-auto" />
+                <p className="font-bold text-sm">Alert Sent Successfully!</p>
+                <p className="text-[11px]">{stockAlertSuccess}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSendStockAlert} className="space-y-4 text-xs">
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Select Ingredient Running Low:
+                  </label>
+                  <select
+                    value={selectedIngredient}
+                    onChange={(e) => setSelectedIngredient(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white p-2.5 text-stone-900 font-medium focus:outline-none focus:border-amber-500"
+                  >
+                    {inventoryList.length > 0 ? (
+                      inventoryList.map((item) => (
+                        <option key={item.id} value={item.name}>
+                          {item.name} ({item.currentStock} {item.unit} remaining)
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Pure Saffron Threads (Kashmir Super Negin)">Pure Saffron Threads (Kashmir Super Negin)</option>
+                        <option value="Irish Halal Certified Chicken Breasts">Irish Halal Certified Chicken Breasts</option>
+                        <option value="Basmati Rice Premium Aged Extra Long">Basmati Rice Premium Aged Extra Long</option>
+                        <option value="Organic Fresh Cream & Ghee">Organic Fresh Cream &amp; Ghee</option>
+                        <option value="Jumbo Tiger Prawns (Wild Catch)">Jumbo Tiger Prawns (Wild Catch)</option>
+                        <option value="Kashmiri Chili & Garam Masala Powder">Kashmiri Chili &amp; Garam Masala Powder</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Current Stock Remaining Estimate:
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { percent: 25, label: '~25% Low', color: 'border-amber-400 bg-amber-50 text-amber-800' },
+                      { percent: 15, label: '~15% Very Low', color: 'border-orange-400 bg-orange-50 text-orange-800' },
+                      { percent: 5, label: '~5% Critical', color: 'border-rose-400 bg-rose-50 text-rose-800' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.percent}
+                        type="button"
+                        onClick={() => setStockRemainingPercent(opt.percent)}
+                        className={`rounded-xl border p-2 text-center font-bold text-xs transition cursor-pointer ${
+                          stockRemainingPercent === opt.percent
+                            ? `${opt.color} ring-2 ring-amber-500`
+                            : 'border-stone-200 text-stone-600 hover:bg-stone-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Chef Note / Restock Urgent Request (Optional):
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={stockAlertNote}
+                    onChange={(e) => setStockAlertNote(e.target.value)}
+                    placeholder="e.g. Running out fast during dinner prep. Need 5 kg before 8 PM."
+                    className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsStockAlertModalOpen(false)}
+                    className="flex-1 rounded-xl border border-stone-200 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-xl bg-amber-600 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 active:scale-98 transition cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span>Send Alert 📢</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

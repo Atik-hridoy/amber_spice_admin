@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Header } from './components/layout/header'
 import { Sidebar } from './components/layout/sidebar'
 import { KitchenKdsView } from './components/kitchen/kitchen-kds-view'
@@ -32,9 +32,34 @@ import type {
   OrderStatus,
   Promotion,
   StaffMember,
+  SystemAlert,
   TableItem,
   WastageRecord,
 } from './types/admin'
+import { getDefaultViewForRole, isViewAllowed } from './utils/roles'
+
+const INITIAL_ALERTS: SystemAlert[] = [
+  {
+    id: 'alert-1',
+    title: '⚠️ Low Stock: Pure Saffron Threads (~20% left)',
+    message: 'Chef Marco flagged: Saffron running low before dinner rush. Restock needed.',
+    type: 'stock_low',
+    timestamp: '12m ago',
+    senderRole: 'chef',
+    senderName: 'Chef Marco Rossi',
+    read: false,
+  },
+  {
+    id: 'alert-2',
+    title: '⚠️ Low Stock: Organic Fresh Cream & Ghee (~10% left)',
+    message: 'Only 8 litres remaining in chill walk-in.',
+    type: 'stock_critical',
+    timestamp: '25m ago',
+    senderRole: 'chef',
+    senderName: 'Sous Chef Vikram',
+    read: false,
+  },
+]
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
@@ -46,7 +71,9 @@ export default function App() {
     }
   })
 
-  const [activeView, setActiveView] = useState<AdminView>('kitchen')
+  const [activeView, setActiveView] = useState<AdminView>(() => {
+    return currentUser ? getDefaultViewForRole(currentUser.role) : 'kitchen'
+  })
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS)
   const [tables, setTables] = useState<TableItem[]>(INITIAL_TABLES)
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY)
@@ -57,6 +84,22 @@ export default function App() {
   const [customers] = useState<Customer[]>(INITIAL_CUSTOMERS)
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [alerts, setAlerts] = useState<SystemAlert[]>(INITIAL_ALERTS)
+
+  // Role View Guard: restrict unauthorized views
+  useEffect(() => {
+    if (currentUser) {
+      if (!isViewAllowed(activeView, currentUser)) {
+        setActiveView(getDefaultViewForRole(currentUser.role))
+      }
+    }
+  }, [currentUser, activeView])
+
+  const handleSelectView = (view: AdminView) => {
+    if (isViewAllowed(view, currentUser)) {
+      setActiveView(view)
+    }
+  }
 
   const handleLogout = () => {
     try {
@@ -67,6 +110,60 @@ export default function App() {
       // ignore
     }
     setCurrentUser(null)
+  }
+
+  // Chef Reports Low Stock -> Broadcasts alert and marks inventory
+  const handleReportLowStock = (data: {
+    ingredientName: string
+    stockRemainingPercent: number
+    note: string
+  }) => {
+    const newAlert: SystemAlert = {
+      id: `alert-${Date.now()}`,
+      title: `⚠️ Low Stock: ${data.ingredientName} (~${data.stockRemainingPercent}% left)`,
+      message: data.note,
+      type: data.stockRemainingPercent <= 10 ? 'stock_critical' : 'stock_low',
+      timestamp: 'Just now',
+      senderRole: 'chef',
+      senderName: currentUser?.fullName || 'Chef Marco',
+      read: false,
+    }
+    setAlerts((prev) => [newAlert, ...prev])
+
+    // Update matching inventory item to low or critical
+    setInventory((prev) =>
+      prev.map((item) => {
+        if (
+          item.name.toLowerCase().includes(data.ingredientName.toLowerCase()) ||
+          data.ingredientName.toLowerCase().includes(item.name.toLowerCase())
+        ) {
+          return {
+            ...item,
+            status: data.stockRemainingPercent <= 10 ? 'critical' : 'low',
+          }
+        }
+        return item
+      })
+    )
+  }
+
+  // Staff forwards placed order to Chef
+  const handleForwardToChef = (order: Order) => {
+    const fwdAlert: SystemAlert = {
+      id: `alert-fwd-${Date.now()}`,
+      title: `👨‍🍳 Order ${order.orderNumber} Transmitted to Kitchen`,
+      message: `${order.customerName}'s order (${order.items.length} dishes) forwarded to Chef's active prep queue.`,
+      type: 'order_forwarded',
+      timestamp: 'Just now',
+      senderRole: 'staff',
+      senderName: currentUser?.fullName || 'Operations Staff',
+      read: false,
+    }
+    setAlerts((prev) => [fwdAlert, ...prev])
+  }
+
+  const handleDismissAlert = (id: string) => {
+    setAlerts((prev) => prev.filter((a) => a.id !== id))
   }
 
   // Derived counts
@@ -175,7 +272,14 @@ export default function App() {
   }
 
   if (!currentUser) {
-    return <AdminLoginView onLoginSuccess={setCurrentUser} />
+    return (
+      <AdminLoginView
+        onLoginSuccess={(user) => {
+          setCurrentUser(user)
+          setActiveView(getDefaultViewForRole(user.role))
+        }}
+      />
+    )
   }
 
   return (
@@ -183,7 +287,7 @@ export default function App() {
       {/* Collapsible Left Sidebar */}
       <Sidebar
         activeView={activeView}
-        onSelectView={setActiveView}
+        onSelectView={handleSelectView}
         activeKitchenCount={activeKitchenCount}
         lowStockCount={lowStockCount}
         isOpenMobile={isMobileSidebarOpen}
@@ -202,6 +306,8 @@ export default function App() {
           activeOrdersCount={activeKitchenCount}
           currentUser={currentUser}
           onLogout={handleLogout}
+          alerts={alerts}
+          onDismissAlert={handleDismissAlert}
         />
 
         {/* Dynamic Page Content */}
@@ -211,6 +317,8 @@ export default function App() {
               orders={orders}
               onUpdateOrderStatus={handleUpdateOrderStatus}
               onAddTicket={(ticket) => setOrders((prev) => [ticket, ...prev])}
+              onReportLowStock={handleReportLowStock}
+              inventoryList={inventory}
             />
           )}
 
@@ -218,6 +326,7 @@ export default function App() {
             <OrdersView
               orders={orders}
               onUpdateOrderStatus={handleUpdateOrderStatus}
+              onForwardToChef={handleForwardToChef}
             />
           )}
 
