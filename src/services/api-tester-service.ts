@@ -65,8 +65,12 @@ export async function sendTesterRequest(input: TesterRequest, signal?: AbortSign
   const text = await response.text()
   let json: unknown
   try { json = JSON.parse(text) } catch { /* Preserve non-JSON responses, including server errors. */ }
+  const responseHeaders: Record<string, string> = {}
+  response.headers.forEach((value, key) => {
+    responseHeaders[key] = value
+  })
   return { status: response.status, statusText: response.statusText,
     timeMs: Math.round(performance.now() - started), sizeBytes: new Blob([text]).size,
-    headers: Object.fromEntries(response.headers.entries()), body: json === undefined ? text : JSON.stringify(json, null, 2), json,
+    headers: responseHeaders, body: json === undefined ? text : JSON.stringify(json, null, 2), json,
   }
 }
