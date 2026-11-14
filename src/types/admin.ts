@@ -83,20 +83,6 @@ export interface WastageRecord {
   timestamp: string
 }
 
-export interface MenuItem {
-  id: string
-  name: string
-  category: string
-  price: number
-  description: string
-  imageUrl: string
-  isAvailable: boolean
-  rating: number
-  ordersCount: number
-  spicyLevel?: 1 | 2 | 3
-  recipeCost?: number
-}
-
 export interface Promotion {
   id: string
   code: string

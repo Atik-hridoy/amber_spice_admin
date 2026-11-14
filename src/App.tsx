@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Header } from './components/layout/header'
 import { Sidebar } from './components/layout/sidebar'
 import { KitchenKdsView } from './components/kitchen/kitchen-kds-view'
@@ -16,7 +16,6 @@ import {
   ANALYTICS_DATA,
   INITIAL_CUSTOMERS,
   INITIAL_INVENTORY,
-  INITIAL_MENU_ITEMS,
   INITIAL_ORDERS,
   INITIAL_PROMOTIONS,
   INITIAL_STAFF,
@@ -27,7 +26,6 @@ import type {
   AdminView,
   Customer,
   InventoryItem,
-  MenuItem,
   Order,
   OrderStatus,
   Promotion,
@@ -37,6 +35,7 @@ import type {
   WastageRecord,
 } from './types/admin'
 import { getDefaultViewForRole, isViewAllowed } from './utils/roles'
+import { clearAdminSession, getStoredAdminUser } from './services/admin-session'
 
 const INITIAL_ALERTS: SystemAlert[] = [
   {
@@ -62,22 +61,14 @@ const INITIAL_ALERTS: SystemAlert[] = [
 ]
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
-    try {
-      const saved = localStorage.getItem('amber_admin_user')
-      return saved ? JSON.parse(saved) : null
-    } catch {
-      return null
-    }
-  })
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(getStoredAdminUser)
 
-  const [activeView, setActiveView] = useState<AdminView>(() => {
+  const [requestedView, setActiveView] = useState<AdminView>(() => {
     return currentUser ? getDefaultViewForRole(currentUser.role) : 'kitchen'
   })
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS)
   const [tables, setTables] = useState<TableItem[]>(INITIAL_TABLES)
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY)
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS)
   const [promotions, setPromotions] = useState<Promotion[]>(INITIAL_PROMOTIONS)
   const [, setWastageRecords] = useState<WastageRecord[]>([])
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF)
@@ -86,14 +77,9 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [alerts, setAlerts] = useState<SystemAlert[]>(INITIAL_ALERTS)
 
-  // Role View Guard: restrict unauthorized views
-  useEffect(() => {
-    if (currentUser) {
-      if (!isViewAllowed(activeView, currentUser)) {
-        setActiveView(getDefaultViewForRole(currentUser.role))
-      }
-    }
-  }, [currentUser, activeView])
+  const activeView = currentUser && !isViewAllowed(requestedView, currentUser)
+    ? getDefaultViewForRole(currentUser.role)
+    : requestedView
 
   const handleSelectView = (view: AdminView) => {
     if (isViewAllowed(view, currentUser)) {
@@ -102,13 +88,7 @@ export default function App() {
   }
 
   const handleLogout = () => {
-    try {
-      localStorage.removeItem('amber_admin_token')
-      localStorage.removeItem('amber_admin_refresh')
-      localStorage.removeItem('amber_admin_user')
-    } catch {
-      // ignore
-    }
+    clearAdminSession()
     setCurrentUser(null)
   }
 
@@ -216,22 +196,6 @@ export default function App() {
 
   const handleLogWastage = (record: WastageRecord) => {
     setWastageRecords((prev) => [record, ...prev])
-  }
-
-  const handleToggleAvailability = (itemId: string) => {
-    setMenuItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, isAvailable: !item.isAvailable } : item
-      )
-    )
-  }
-
-  const handleAddDish = (dish: MenuItem) => {
-    setMenuItems((prev) => [dish, ...prev])
-  }
-
-  const handleUpdateDish = (dish: MenuItem) => {
-    setMenuItems((prev) => prev.map((item) => (item.id === dish.id ? dish : item)))
   }
 
   const handleAddPromotion = (promo: Promotion) => {
@@ -351,10 +315,7 @@ export default function App() {
 
           {activeView === 'products' && (
             <ProductsView
-              items={menuItems}
-              onToggleAvailability={handleToggleAvailability}
-              onAddDish={handleAddDish}
-              onUpdateDish={handleUpdateDish}
+              currentUser={currentUser}
             />
           )}
 

@@ -13,12 +13,12 @@ import {
   Sparkles,
 } from 'lucide-react'
 import type { AdminUser } from '../../types/admin'
+import { ADMIN_API_BASE_URL } from '../../services/api-client'
+import { storeAdminSession } from '../../services/admin-session'
 
 interface AdminLoginViewProps {
   onLoginSuccess: (user: AdminUser) => void
 }
-
-const BACKEND_BASE_URL = 'http://127.0.0.1:8000'
 
 export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
   const [identifier, setIdentifier] = useState('')
@@ -34,7 +34,7 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
     let isMounted = true
     async function checkApi() {
       try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/v1/auth/superadmin/setup/`, {
+        const res = await fetch(`${ADMIN_API_BASE_URL}/auth/superadmin/setup/`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         })
@@ -79,7 +79,7 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
 
     try {
       // 1. Try real backend authentication
-      const response = await fetch(`${BACKEND_BASE_URL}/api/v1/auth/login/`, {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,11 +107,7 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
           permissions: data.user.permissions || [],
         }
 
-        if (rememberMe) {
-          localStorage.setItem('amber_admin_token', data.access)
-          localStorage.setItem('amber_admin_refresh', data.refresh)
-          localStorage.setItem('amber_admin_user', JSON.stringify(userObj))
-        }
+        storeAdminSession(data.access, data.refresh, userObj, rememberMe)
 
         onLoginSuccess(userObj)
         return
