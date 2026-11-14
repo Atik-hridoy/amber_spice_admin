@@ -80,3 +80,4 @@ export function getDefaultViewForRole(role?: string): AdminView {
   if (role === 'staff' || role === 'cashier_front' || role === 'delivery_staff') return 'orders'
   return 'kitchen'
 }
+
