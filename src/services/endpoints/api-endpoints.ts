@@ -46,6 +46,9 @@ export const API_ENDPOINTS = {
 
   // Inventory & Stock Management
   INVENTORY: {
+    CATEGORIES: 'inventory/categories/',
+    categoriesList: (ordering: string = 'name') => `inventory/categories/?ordering=${ordering}`,
+    categoryDetail: (id: number | string) => `inventory/categories/${id}/`,
     ITEMS: 'inventory/items/',
     itemDetail: (id: number | string) => `inventory/items/${id}/`,
     LOW_STOCK: 'inventory/items/low-stock/',
