@@ -2,6 +2,7 @@ import type { DishPayload, MenuDish } from '../types/menu-dish'
 import type { PaginatedResponse } from '../types/menu-category'
 import { adminRequest } from './api-client'
 import { AdminApiError } from './api-error'
+import { API_ENDPOINTS } from './endpoints/api-endpoints'
 
 function bodyFor(payload: DishPayload): BodyInit {
   if (!payload.image) return JSON.stringify(payload)
@@ -17,7 +18,7 @@ export const dishService = {
   async list(signal?: AbortSignal): Promise<MenuDish[]> {
     const dishes: MenuDish[] = []
     const visited = new Set<string>()
-    let next: string | null = 'menu/dishes/?ordering=-created_at'
+    let next: string | null = API_ENDPOINTS.MENU.dishesList('-created_at')
     while (next) {
       if (visited.has(next)) throw new AdminApiError('The dish list could not be loaded. Please retry.')
       visited.add(next)
@@ -29,14 +30,15 @@ export const dishService = {
     return dishes
   },
   save(payload: DishPayload, id?: number): Promise<MenuDish> {
-    return adminRequest(id ? `menu/dishes/${id}/` : 'menu/dishes/', {
+    const endpoint = id ? API_ENDPOINTS.MENU.dishDetail(id) : API_ENDPOINTS.MENU.DISHES
+    return adminRequest(endpoint, {
       method: id ? 'PATCH' : 'POST', requireAuth: true, body: bodyFor(payload), timeoutMs: payload.image ? 60000 : 15000,
     })
   },
   async setAvailability(dish: MenuDish): Promise<MenuDish> {
-    await adminRequest(`menu/dishes/${dish.id}/toggle-availability/`, {
+    await adminRequest(API_ENDPOINTS.MENU.dishToggleAvailability(dish.id), {
       method: 'PATCH', requireAuth: true, body: JSON.stringify({ is_available: !dish.isAvailable }),
     })
-    return adminRequest(`menu/dishes/${dish.id}/`, { requireAuth: true })
+    return adminRequest(API_ENDPOINTS.MENU.dishDetail(dish.id), { requireAuth: true })
   },
 }

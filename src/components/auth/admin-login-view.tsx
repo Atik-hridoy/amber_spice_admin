@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import type { AdminUser } from '../../types/admin'
-import { ADMIN_API_BASE_URL } from '../../services/api-client'
+import { ADMIN_API_BASE_URL, API_ENDPOINTS } from '../../services/endpoints'
 import { storeAdminSession } from '../../services/admin-session'
 
 interface AdminLoginViewProps {
@@ -34,7 +34,7 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
     let isMounted = true
     async function checkApi() {
       try {
-        const res = await fetch(`${ADMIN_API_BASE_URL}/auth/superadmin/setup/`, {
+        const res = await fetch(`${ADMIN_API_BASE_URL}/${API_ENDPOINTS.AUTH.SUPERADMIN_SETUP}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         })
@@ -79,7 +79,7 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
 
     try {
       // 1. Try real backend authentication
-      const response = await fetch(`${ADMIN_API_BASE_URL}/auth/login/`, {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/${API_ENDPOINTS.AUTH.LOGIN}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

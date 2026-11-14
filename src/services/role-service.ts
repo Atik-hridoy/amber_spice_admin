@@ -1,5 +1,6 @@
 import type { CreateAccountPayload, CreateRolePayload, RoleConfig } from '../types/admin'
 import { adminRequest } from './api-client'
+import { API_ENDPOINTS } from './endpoints/api-endpoints'
 
 export interface PermissionCatalogResponse {
   permissions: Record<string, string>
@@ -150,7 +151,7 @@ export const roleService = {
   async listRoles(signal?: AbortSignal): Promise<RoleConfig[]> {
     try {
       const response = await adminRequest<RoleConfig[] | { results: RoleConfig[] }>(
-        'auth/roles-config/',
+        API_ENDPOINTS.AUTH.ROLES_CONFIG,
         { requireAuth: true, signal }
       )
       if (Array.isArray(response)) return response
@@ -166,7 +167,7 @@ export const roleService = {
    * Create a new role definition with permissions
    */
   async createRole(payload: CreateRolePayload): Promise<RoleConfig> {
-    return adminRequest<RoleConfig>('auth/roles-config/', {
+    return adminRequest<RoleConfig>(API_ENDPOINTS.AUTH.ROLES_CONFIG, {
       method: 'POST',
       requireAuth: true,
       body: JSON.stringify(payload),
@@ -177,7 +178,7 @@ export const roleService = {
    * Update permissions assigned to a role
    */
   async updateRolePermissions(id: number | string, permissions: string[]): Promise<RoleConfig> {
-    return adminRequest<RoleConfig>(`auth/roles-config/${id}/`, {
+    return adminRequest<RoleConfig>(API_ENDPOINTS.AUTH.roleConfigDetail(id), {
       method: 'PATCH',
       requireAuth: true,
       body: JSON.stringify({ permissions }),
@@ -189,7 +190,7 @@ export const roleService = {
    */
   async getCatalog(signal?: AbortSignal): Promise<PermissionCatalogResponse> {
     try {
-      return await adminRequest<PermissionCatalogResponse>('auth/roles-config/catalog/', {
+      return await adminRequest<PermissionCatalogResponse>(API_ENDPOINTS.AUTH.ROLES_CATALOG, {
         requireAuth: true,
         signal,
       })
@@ -203,7 +204,7 @@ export const roleService = {
    */
   async listStaffAccounts(signal?: AbortSignal): Promise<StaffAccountItem[]> {
     try {
-      const response = await adminRequest<any>('auth/staff/', { requireAuth: true, signal })
+      const response = await adminRequest<any>(API_ENDPOINTS.AUTH.STAFF, { requireAuth: true, signal })
       const rawList = Array.isArray(response) ? response : response?.results || []
       return rawList.map((user: any) => ({
         id: user.id,
@@ -226,7 +227,7 @@ export const roleService = {
    * Create a new user account with role provisioning
    */
   async createStaffAccount(payload: CreateAccountPayload): Promise<any> {
-    const response = await adminRequest<any>('auth/staff/', {
+    const response = await adminRequest<any>(API_ENDPOINTS.AUTH.STAFF, {
       method: 'POST',
       requireAuth: true,
       body: JSON.stringify(payload),
@@ -238,7 +239,7 @@ export const roleService = {
    * Toggle active/inactive status of a staff account
    */
   async toggleStaffStatus(id: number | string, isActive: boolean): Promise<any> {
-    return adminRequest<any>(`auth/staff/${id}/`, {
+    return adminRequest<any>(API_ENDPOINTS.AUTH.staffDetail(id), {
       method: 'PATCH',
       requireAuth: true,
       body: JSON.stringify({ is_active: isActive }),

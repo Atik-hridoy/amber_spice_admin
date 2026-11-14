@@ -1,12 +1,13 @@
 import type { CreateCategoryPayload, MenuCategory, PaginatedResponse } from '../types/menu-category'
 import { adminRequest } from './api-client'
 import { AdminApiError } from './api-error'
+import { API_ENDPOINTS } from './endpoints/api-endpoints'
 
 export const categoryService = {
   async list(signal?: AbortSignal): Promise<MenuCategory[]> {
     const categories: MenuCategory[] = []
     const visited = new Set<string>()
-    let next: string | null = 'menu/categories/?ordering=order,name'
+    let next: string | null = API_ENDPOINTS.MENU.categoriesList('order,name')
     while (next) {
       if (visited.has(next)) throw new AdminApiError('The category list could not be loaded. Please retry.')
       visited.add(next)
@@ -29,7 +30,7 @@ export const categoryService = {
     } else {
       body = JSON.stringify(payload)
     }
-    return adminRequest('menu/categories/', {
+    return adminRequest(API_ENDPOINTS.MENU.CATEGORIES, {
       method: 'POST', requireAuth: true, body, timeoutMs: payload.image ? 60000 : 15000,
     })
   },
@@ -45,7 +46,7 @@ export const categoryService = {
     } else {
       body = JSON.stringify(payload)
     }
-    return adminRequest(`menu/categories/${id}/`, {
+    return adminRequest(API_ENDPOINTS.MENU.categoryDetail(id), {
       method: 'PATCH',
       requireAuth: true,
       body,
@@ -54,7 +55,7 @@ export const categoryService = {
   },
 
   delete(id: number | string): Promise<void> {
-    return adminRequest(`menu/categories/${id}/`, {
+    return adminRequest(API_ENDPOINTS.MENU.categoryDetail(id), {
       method: 'DELETE',
       requireAuth: true,
     })

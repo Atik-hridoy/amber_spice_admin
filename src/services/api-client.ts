@@ -1,9 +1,9 @@
 import { AdminApiError, errorFromResponse } from './api-error'
 import { clearAdminSession, getAdminAccessToken, getAdminRefreshToken, updateAdminTokens } from './admin-session'
+import { ADMIN_API_BASE_URL, resolveApiUrl } from './endpoints/base-url'
+import { API_ENDPOINTS } from './endpoints/api-endpoints'
 
-export const ADMIN_API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1'
-).replace(/\/+$/, '')
+export { ADMIN_API_BASE_URL, resolveApiUrl }
 
 interface AdminRequestOptions extends RequestInit {
   requireAuth?: boolean
@@ -33,7 +33,7 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refresh) return null
   refreshPromise = (async () => {
     try {
-      const response = await fetchWithTimeout(`${ADMIN_API_BASE_URL}/auth/token/refresh/`, {
+      const response = await fetchWithTimeout(`${ADMIN_API_BASE_URL}/${API_ENDPOINTS.AUTH.REFRESH}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh }),
@@ -53,15 +53,6 @@ async function refreshAccessToken(): Promise<string | null> {
     }
   })()
   return refreshPromise
-}
-
-function resolveApiUrl(endpoint: string): string {
-  const base = new URL(`${ADMIN_API_BASE_URL}/`)
-  const url = /^https?:\/\//.test(endpoint) ? new URL(endpoint) : new URL(endpoint.replace(/^\/+/, ''), base)
-  if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) {
-    throw new AdminApiError('The server returned an invalid pagination address.')
-  }
-  return url.toString()
 }
 
 export async function adminFetch(endpoint: string, options: AdminRequestOptions = {}): Promise<Response> {

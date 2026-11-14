@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import type { StaffMember } from '../../types/admin'
+import { API_ENDPOINTS, resolveApiUrl } from '../../services/endpoints'
 
 interface StaffViewProps {
   staff: StaffMember[]
@@ -21,8 +22,6 @@ interface StaffViewProps {
   onAddStaffMember?: (newStaff: StaffMember) => void
   onDeleteStaffMember?: (staffId: string) => void
 }
-
-const BACKEND_BASE_URL = 'http://127.0.0.1:8000'
 
 const AVAILABLE_ROLES = [
   { id: 'manager', label: 'General Manager (Whole Access)', category: 'manager', badge: 'bg-amber-500/15 text-amber-800 border-amber-300' },
@@ -151,7 +150,7 @@ export function StaffView({
         headers['Authorization'] = `Bearer ${token}`
       }
 
-      await fetch(`${BACKEND_BASE_URL}/api/v1/auth/staff/`, {
+      await fetch(resolveApiUrl(API_ENDPOINTS.AUTH.STAFF), {
         method: 'POST',
         headers,
         body: JSON.stringify({
