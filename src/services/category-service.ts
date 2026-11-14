@@ -33,4 +33,30 @@ export const categoryService = {
       method: 'POST', requireAuth: true, body, timeoutMs: payload.image ? 60000 : 15000,
     })
   },
+
+  update(id: number | string, payload: Partial<CreateCategoryPayload>): Promise<MenuCategory> {
+    let body: BodyInit
+    if (payload.image) {
+      const formData = new FormData()
+      for (const [key, value] of Object.entries(payload)) {
+        if (value !== undefined && value !== null) formData.append(key, value instanceof File ? value : String(value))
+      }
+      body = formData
+    } else {
+      body = JSON.stringify(payload)
+    }
+    return adminRequest(`menu/categories/${id}/`, {
+      method: 'PATCH',
+      requireAuth: true,
+      body,
+      timeoutMs: payload.image ? 60000 : 15000,
+    })
+  },
+
+  delete(id: number | string): Promise<void> {
+    return adminRequest(`menu/categories/${id}/`, {
+      method: 'DELETE',
+      requireAuth: true,
+    })
+  },
 }

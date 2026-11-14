@@ -6,6 +6,7 @@ import { FormDialog } from './form-dialog'
 import { MenuImageInput } from './menu-image-input'
 
 interface CategoryFormModalProps {
+  category?: MenuCategory
   isSaving: boolean
   onClose: () => void
   onSubmit: (payload: CreateCategoryPayload) => Promise<MenuCategory>
@@ -13,8 +14,15 @@ interface CategoryFormModalProps {
 
 const INPUT_CLASS = 'mt-1.5 w-full rounded-xl border border-stone-200 bg-[#FAF9F5] px-3 py-2.5 text-sm text-stone-900 outline-none transition-colors focus:border-[#B84A22] focus:ring-2 focus:ring-[#B84A22]/15 disabled:opacity-60'
 
-export function CategoryFormModal({ isSaving, onClose, onSubmit }: CategoryFormModalProps) {
-  const [form, setForm] = useState({ name: '', description: '', slug: '', imageUrl: '', order: '0', is_active: true })
+export function CategoryFormModal({ category, isSaving, onClose, onSubmit }: CategoryFormModalProps) {
+  const [form, setForm] = useState({
+    name: category?.name || '',
+    description: category?.description || '',
+    slug: category?.slug || '',
+    imageUrl: category?.imageUrl || '',
+    order: String(category?.order ?? 0),
+    is_active: category?.is_active ?? true,
+  })
   const [error, setError] = useState<AdminApiError | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imageError, setImageError] = useState('')
@@ -42,7 +50,16 @@ export function CategoryFormModal({ isSaving, onClose, onSubmit }: CategoryFormM
   }
 
   return (
-    <FormDialog title="Add Category" description="Create a section for your menu. Only the name is required." onClose={onClose} busy={isSaving}>
+    <FormDialog
+      title={category ? 'Edit Category' : 'Add Category'}
+      description={
+        category
+          ? `Update settings, image, and details for “${category.name}”.`
+          : 'Create a section for your menu. Only the name is required.'
+      }
+      onClose={onClose}
+      busy={isSaving}
+    >
       <form onSubmit={submit} className="px-6 pb-6 pt-5">
         {error && <div role="alert" className="mb-5 flex gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"><AlertCircle size={17} className="mt-0.5 shrink-0" />{error.message}</div>}
         <fieldset disabled={isSaving} className="space-y-4">
@@ -83,7 +100,7 @@ export function CategoryFormModal({ isSaving, onClose, onSubmit }: CategoryFormM
         <div className="mt-6 flex items-center justify-end gap-2 border-t border-stone-100 pt-4">
           <button type="button" onClick={onClose} disabled={isSaving} className="rounded-xl border border-stone-200 px-4 py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50 disabled:opacity-50">Cancel</button>
           <button type="submit" disabled={isSaving || !!imageError} className="inline-flex items-center gap-2 rounded-xl bg-[#B84A22] px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#9E3E1C] disabled:cursor-wait disabled:opacity-60">
-            {isSaving && <Loader2 size={15} className="animate-spin motion-reduce:animate-none" />}{isSaving ? 'Saving category…' : 'Save Category'}
+            {isSaving && <Loader2 size={15} className="animate-spin motion-reduce:animate-none" />}{isSaving ? 'Saving category…' : category ? 'Update Category' : 'Save Category'}
           </button>
         </div>
       </form>

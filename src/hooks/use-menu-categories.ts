@@ -55,5 +55,30 @@ export function useMenuCategories() {
     }
   }
 
-  return { categories, isLoading, isSaving, loadError, reload, createCategory }
+  const updateCategory = async (id: number | string, payload: Partial<CreateCategoryPayload>) => {
+    setIsSaving(true)
+    try {
+      const saved = await categoryService.update(id, payload)
+      setCategories((previous) =>
+        [...previous.filter((item) => item.id !== saved.id), saved].sort(
+          (a, b) => a.order - b.order || a.name.localeCompare(b.name)
+        )
+      )
+      return saved
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const deleteCategory = async (id: number | string) => {
+    setIsSaving(true)
+    try {
+      await categoryService.delete(id)
+      setCategories((previous) => previous.filter((item) => item.id !== id))
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return { categories, isLoading, isSaving, loadError, reload, createCategory, updateCategory, deleteCategory }
 }

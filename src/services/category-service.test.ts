@@ -94,4 +94,16 @@ describe('category service and admin authentication', () => {
     await expect(categoryService.create({ name: 'Seafood' })).rejects.toThrow('Cannot connect')
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
+
+  it('updates a category via PATCH and returns the updated category', async () => {
+    storeAdminSession('access-test', 'refresh-test', manager, true)
+    const updated = categoryFixture({ id: 5, name: 'Updated Curries', order: 2 })
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(updated, 200))
+    vi.stubGlobal('fetch', fetchMock)
+    const result = await categoryService.update(5, { name: 'Updated Curries', order: 2 })
+    expect(result).toEqual(updated)
+    expect(fetchMock.mock.calls[0][0]).toBe('http://127.0.0.1:8000/api/v1/menu/categories/5/')
+    expect(fetchMock.mock.calls[0][1].method).toBe('PATCH')
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ name: 'Updated Curries', order: 2 })
+  })
 })
