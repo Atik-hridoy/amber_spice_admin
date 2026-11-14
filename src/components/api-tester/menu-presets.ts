@@ -1,4 +1,4 @@
-import { ADMIN_API_BASE_URL } from '../../services/api-client'
+import { ADMIN_API_BASE_URL } from '../../services/endpoints'
 import type { ApiPreset, BodyMode, HttpMethod, MenuResource } from '../../types/api-tester'
 
 const category = { name: '', description: '', order: 0, is_active: true }

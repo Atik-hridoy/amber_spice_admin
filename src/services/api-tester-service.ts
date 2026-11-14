@@ -1,8 +1,9 @@
-import { ADMIN_API_BASE_URL, adminFetch } from './api-client'
+import { adminFetch } from './api-client'
+import { ADMIN_API_BASE_URL, BACKEND_SERVER_URL } from './endpoints'
 import type { TesterRequest, TesterResponse } from '../types/api-tester'
 
-export const API_SCHEMA_URL = new URL('../schema/?format=json', `${ADMIN_API_BASE_URL}/`).href
-export const API_DOCS_URL = new URL('../docs/', `${ADMIN_API_BASE_URL}/`).href
+export const API_SCHEMA_URL = `${BACKEND_SERVER_URL}/api/schema/?format=json`
+export const API_DOCS_URL = `${BACKEND_SERVER_URL}/api/docs/`
 
 export function resolveTesterUrl(template: string, variables: Record<string, string>): string {
   const resolved = template.replace(/\{([^}]+)\}/g, (_, key: string) => {

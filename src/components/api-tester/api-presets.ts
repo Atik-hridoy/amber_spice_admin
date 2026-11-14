@@ -1,4 +1,4 @@
-import { ADMIN_API_BASE_URL } from '../../services/api-client'
+import { ADMIN_API_BASE_URL } from '../../services/endpoints'
 import type { ApiPreset } from '../../types/api-tester'
 import { MENU_PRESETS } from './menu-presets'
 

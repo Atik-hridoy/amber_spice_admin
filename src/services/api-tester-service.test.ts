@@ -2,9 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { sendTesterRequest } from './api-tester-service'
 import { storeAdminSession } from './admin-session'
 import { jsonResponse, manager } from '../test/menu-fixtures'
+import { API_ENDPOINTS, resolveApiUrl } from './endpoints'
 import type { TesterRequest } from '../types/api-tester'
 
-const request: TesterRequest = { method: 'POST', url: 'http://127.0.0.1:8000/api/v1/menu/dishes/',
+const request: TesterRequest = { method: 'POST', url: resolveApiUrl(API_ENDPOINTS.MENU.DISHES),
   variables: {}, body: '{"name":"Dish","category":7,"price":"10.00","dietary":[],"isAvailable":false}',
   bodyMode: 'json', headers: '{}', authMode: 'session', token: '', file: null, fileField: 'image',
 }
