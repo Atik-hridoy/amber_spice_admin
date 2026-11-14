@@ -75,7 +75,7 @@ export async function adminFetch(endpoint: string, options: AdminRequestOptions 
 
   const send = (access: string | null) => {
     const headers = new Headers(requestOptions.headers)
-    headers.set('Accept', 'application/json')
+    if (!headers.has('Accept')) headers.set('Accept', 'application/json')
     if (requestOptions.body instanceof FormData) headers.delete('Content-Type')
     else if (requestOptions.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
     if (access) headers.set('Authorization', `Bearer ${access}`)

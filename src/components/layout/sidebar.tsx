@@ -118,6 +118,22 @@ export function Sidebar({
     },
   ]
 
+  const securityNav: {
+    id: AdminView
+    label: string
+    icon: typeof ShieldCheck
+    badge?: number | string
+    badgeColor?: string
+  }[] = [
+    {
+      id: 'roles',
+      label: 'Account & Roles',
+      icon: ShieldCheck,
+      badge: 'RBAC',
+      badgeColor: 'bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold',
+    },
+  ]
+
   const handleSelect = (view: AdminView) => {
     onSelectView(view)
     onCloseMobile()
@@ -232,6 +248,47 @@ export function Sidebar({
               </div>
               <div className="space-y-1">
                 {managementNav
+                  .filter((item) => isViewAllowed(item.id, currentUser))
+                  .map((item) => {
+                    const Icon = item.icon
+                    const isActive = activeView === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelect(item.id)}
+                        className={`group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition cursor-pointer ${
+                          isActive
+                            ? 'bg-[#F15A24] text-white shadow-[0px_2px_4px_-2px_rgba(241,90,36,0.25),0px_4px_6px_-1px_rgba(241,90,36,0.25)]'
+                            : 'text-stone-300 hover:bg-[#1F1814] hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-stone-400 group-hover:text-amber-400'}`} />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.badge ? (
+                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${item.badgeColor}`}>
+                            {item.badge}
+                          </span>
+                        ) : (
+                          <ChevronRight className={`h-3 w-3 opacity-0 group-hover:opacity-100 transition ${isActive ? 'text-white' : 'text-stone-500'}`} />
+                        )}
+                      </button>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Access Control & Roles Category */}
+          {securityNav.filter((item) => isViewAllowed(item.id, currentUser)).length > 0 && (
+            <div>
+              <div className="px-3 pb-1.5 text-[10.5px] font-bold tracking-[0.05em] text-[#78716C] uppercase">
+                Access Control
+              </div>
+              <div className="space-y-1">
+                {securityNav
                   .filter((item) => isViewAllowed(item.id, currentUser))
                   .map((item) => {
                     const Icon = item.icon

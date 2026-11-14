@@ -10,6 +10,7 @@ import { ProductsView } from './components/products/products-view'
 import { PromotionsView } from './components/promotions/promotions-view'
 import { CustomersView } from './components/customers/customers-view'
 import { StaffView } from './components/staff/staff-view'
+import { RolesManagementView } from './components/roles/roles-management-view'
 import { ApiTesterView } from './components/api-tester/api-tester-view'
 import { AdminLoginView } from './components/auth/admin-login-view'
 import {
@@ -340,6 +341,10 @@ export default function App() {
               onAddStaffMember={handleAddStaffMember}
               onDeleteStaffMember={handleDeleteStaffMember}
             />
+          )}
+
+          {activeView === 'roles' && (
+            <RolesManagementView currentUser={currentUser} />
           )}
 
           {activeView === 'transactions' && (

@@ -10,6 +10,7 @@ export type AdminView =
   | 'staff'
   | 'transactions'
   | 'api-tester'
+  | 'roles'
 
 export type OrderStatus =
   | 'pending'
@@ -168,3 +169,34 @@ export interface AdminUser {
   isSuperAdmin?: boolean
   permissions: string[]
 }
+
+export interface RoleConfig {
+  id: number | string
+  role: string
+  name: string
+  description?: string
+  permissions: string[]
+  is_customizable: boolean
+  availablePermissions?: Record<string, string>
+  categories?: Record<string, string[]>
+  updated_at?: string
+}
+
+export interface CreateRolePayload {
+  role: string
+  name: string
+  description?: string
+  permissions: string[]
+}
+
+export interface CreateAccountPayload {
+  name: string
+  email: string
+  username?: string
+  password: string
+  role: string
+  phone?: string
+  shift?: string
+  assigned_section?: string
+}
+

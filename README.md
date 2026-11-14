@@ -20,6 +20,16 @@ Category tabs and dish cards display **Added by** from the read-only API respons
 
 Dish API contract: `../resturent_backend/docs/menu-dishes.md`.
 
+## API Studio
+
+Open **API Tester** in the admin sidebar. The collection loads from the running backend's OpenAPI schema and includes curated category/dish workflows for create, list, detail, edit, PUT, archive/restore or delete, image upload/replacement/removal, filters, popular/bestsellers and availability. **Refresh API collection** discovers new backend operations.
+
+Use **Load menu IDs** to select existing category/dish records. Category selection fills a dish request's `category` property. Successful create/detail responses remember the returned ID for subsequent requests. Fill editable templates before pressing Send; mutations operate on real records.
+
+The Body tab supports JSON, multipart properties plus a file field, or no body. For menu uploads use `image`; the browser supplies the multipart boundary. Auth supports the current admin session (with refresh), a manual bearer token, or no authentication for public/permission tests. A tested login's response token is kept in the tester without replacing your admin login.
+
+Responses preserve actual success/error status, body, headers, duration and size. Returned image URLs can be previewed/opened. Requests use `VITE_API_BASE_URL`; IDs are entered or loaded, and no sample data is saved unless you explicitly send a mutation.
+
 ## Development and verification
 
 - Start Django on `http://127.0.0.1:8000` and run `npm run dev` for the admin on port 5174.
