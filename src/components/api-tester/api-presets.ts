@@ -4,6 +4,7 @@ import { MENU_PRESETS } from './menu-presets'
 import { ORDER_PRESETS } from './order-presets'
 import { ADDRESS_PRESETS, PROFILE_PRESETS } from './profile-presets'
 import { RIDER_PRESETS } from './rider-presets'
+import { HANDOVER_CONTACT_PRESETS } from './handover-contact-presets'
 
 export const API_PRESETS: ApiPreset[] = [
   ...MENU_PRESETS,
@@ -11,6 +12,7 @@ export const API_PRESETS: ApiPreset[] = [
   ...PROFILE_PRESETS,
   ...ADDRESS_PRESETS,
   ...RIDER_PRESETS,
+  ...HANDOVER_CONTACT_PRESETS,
   { id: 'auth-login', name: 'Sign in', category: 'Authentication', method: 'POST',
     url: `${ADMIN_API_BASE_URL}/auth/login/`, auth: 'none',
     description: 'Enter account credentials. The response access token becomes available in Manual bearer mode.',

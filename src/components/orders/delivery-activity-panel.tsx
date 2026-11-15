@@ -1,3 +1,4 @@
+import { DeliveryConversationPanel } from './delivery-conversation-panel'
 import { useEffect, useState } from 'react'
 import type { DeliveryActivity, DeliverySummary } from '../../types/admin'
 import { orderService } from '../../services/order-service'
@@ -56,6 +57,7 @@ export function DeliveryActivityPanel({ orderId, progress, canResolve, onReload 
       {current.data.events.length === 0 ? <p>No recorded rider events yet.</p> : <ol className="space-y-2">{current.data.events.map((event) => <li key={event.id} className="border-l-2 border-stone-200 pl-3">
         <strong className="capitalize">{event.action.replaceAll('_', ' ')}</strong><span className="ml-2 text-stone-500">{event.actorName} · {new Date(event.createdAt).toLocaleString()}</span>{event.note && <p className="mt-1">{event.note}</p>}{event.amount !== null && <p>€{event.amount} cash recorded</p>}
       </li>)}</ol>}
+      <DeliveryConversationPanel key={orderId} orderId={orderId} />
     </div>)}
   </div>
 }

@@ -23,7 +23,8 @@ export const RIDER_PRESETS: ApiPreset[] = [
     ['collect-cash', '9. Record cash received', 'After actual handover and receipt of full total. Delivered cash orders only; records one receipt.'],
   ] as const).map(([action, name, detail]) => ({
     id: `rider-${action}`, name, category, method: 'POST' as const, auth, resource: 'order' as const,
-    url: `${base}/jobs/{orderId}/${action}/`, description: `JWT assigned delivery_staff with deliveries:update_status. ${detail} No body. Safe to retry; timestamps/events are not duplicated.`,
+    url: `${base}/jobs/{orderId}/${action}/`, description: `JWT assigned delivery_staff with deliveries:update_status. ${detail} ${action === 'pickup' || action === 'complete' ? 'Requires recorded kitchen sealed-bag handover. Enter ticket_code printed on the actual bag and bag_count (1–30). Completion also requires recipient_confirmed=true after matching customer name/address and all bags. Generic status endpoints cannot bypass verification. Older already-dispatched deliveries without a code use the full printed order number at delivery.' : 'No body.'} Safe to retry; timestamps/events are not duplicated.`,
+    ...((action === 'pickup' || action === 'complete') ? { body: JSON.stringify({ ticket_code: '', bag_count: 1, ...(action === 'complete' ? { recipient_confirmed: false } : {}) }, null, 2) } : {}),
   })),
   { id: 'rider-completed', name: '10. Reload completed deliveries', category, method: 'GET', auth, resource: 'order', url: `${base}/jobs/?scope=completed`,
     description: 'JWT delivery_staff. Verify completion/payment persists on a fresh read. Delivered cash still pending remains in active queue until cash collection is confirmed.' },

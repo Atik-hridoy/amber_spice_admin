@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import * as api from '../../services/api-client'
 import { orderService } from '../../services/order-service'
 import type { DeliveryActivity } from '../../types/admin'
 import { DeliveryActivityPanel } from './delivery-activity-panel'
@@ -10,6 +11,7 @@ const activity: DeliveryActivity = { stage: 'arrived', hasIssue: true, acceptedA
 
 describe('Dispatch rider activity', () => {
   it('loads real issue details, preserves a failed resolution, and retries the API write', async () => {
+    vi.spyOn(api, 'adminRequest').mockResolvedValue({ messages: [], hasMore: false, nextAfterId: 0 })
     vi.spyOn(orderService, 'deliveryProgress').mockResolvedValue(activity)
     const resolve = vi.spyOn(orderService, 'resolveDeliveryIssue').mockRejectedValueOnce(new Error('Resolution not saved'))
       .mockResolvedValueOnce({ ...activity, hasIssue: false, issue: null })
@@ -27,6 +29,7 @@ describe('Dispatch rider activity', () => {
   })
 
   it('saves return approval and supports failed activity reads with retry', async () => {
+    vi.spyOn(api, 'adminRequest').mockResolvedValue({ messages: [], hasMore: false, nextAfterId: 0 })
     vi.spyOn(orderService, 'deliveryProgress').mockRejectedValueOnce(new Error('Activity offline')).mockResolvedValueOnce(activity)
     const approve = vi.spyOn(orderService, 'requestDeliveryReturn').mockResolvedValue({ ...activity, stage: 'returning', hasIssue: false, issue: null })
     render(<DeliveryActivityPanel orderId="44" progress={activity} canResolve onReload={vi.fn()} />)
