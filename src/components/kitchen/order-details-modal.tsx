@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import {
   AlertCircle,
-  Check,
-  Clock,
   MapPin,
   Phone,
   Printer,
@@ -24,19 +22,9 @@ export function OrderDetailsModal({
   onUpdateStatus,
 }: OrderDetailsModalProps) {
   const [activeTab, setActiveTab] = useState<'details' | 'slip'>('details')
-  const [isPrinting, setIsPrinting] = useState(false)
-  const [printSuccess, setPrintSuccess] = useState(false)
-
   if (!order) return null
 
-  const handlePrint = () => {
-    setIsPrinting(true)
-    setTimeout(() => {
-      setIsPrinting(false)
-      setPrintSuccess(true)
-      setTimeout(() => setPrintSuccess(false), 2500)
-    }, 600)
-  }
+  const handlePrint = () => window.print()
 
   const paymentLabel = order.paymentMethod
     ? order.paymentMethod.replace('-', '_').toUpperCase()
@@ -77,11 +65,7 @@ export function OrderDetailsModal({
                   : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
               }`}
             >
-              {order.status === 'pending'
-                ? 'Incoming'
-                : order.status === 'preparing'
-                ? 'In Progress'
-                : 'Ready'}
+              {order.status.replaceAll('-', ' ')}
             </span>
           </div>
 
@@ -205,7 +189,7 @@ export function OrderDetailsModal({
               {/* Total Paid Row (Figma node #24057:12487) */}
               <div className="pt-2 border-t border-[#E7E5E4] flex items-center justify-between">
                 <span className="font-bold text-sm text-[#1C1917]">
-                  Total Paid ({paymentLabel})
+                  Total · {order.paymentStatus} ({paymentLabel})
                 </span>
                 <span className="font-bold text-sm text-[#F15A24]">
                   €{order.totalAmount.toFixed(2)}
@@ -218,7 +202,6 @@ export function OrderDetailsModal({
               <div className="text-center space-y-1 border-b border-dashed border-stone-400 pb-3">
                 <p className="font-bold text-sm tracking-wider uppercase">AMBER SPICE</p>
                 <p className="text-[11px] text-stone-600">Royal Indian Cuisine Dublin</p>
-                <p className="text-[10px] text-stone-500">VAT Reg: IE9823419H &bull; Tel: +353 1 234 5678</p>
               </div>
 
               <div className="text-[11px] space-y-1 border-b border-dashed border-stone-400 pb-2">
@@ -266,12 +249,13 @@ export function OrderDetailsModal({
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span>SUBTOTAL:</span>
-                  <span>€{(order.totalAmount - (order.diningType === 'delivery' ? 2 : 0)).toFixed(2)}</span>
+                  <span>€{order.subtotal.toFixed(2)}</span>
                 </div>
+                {order.discountAmount > 0 && <div className="flex justify-between"><span>VOUCHER ({order.couponCode}):</span><span>−€{order.discountAmount.toFixed(2)}</span></div>}
                 {order.diningType === 'delivery' && (
                   <div className="flex justify-between text-stone-600">
                     <span>DELIVERY:</span>
-                    <span>€2.00</span>
+                    <span>€{order.deliveryFee.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-sm pt-1 border-t border-stone-300">
@@ -279,7 +263,7 @@ export function OrderDetailsModal({
                   <span>€{order.totalAmount.toFixed(2)}</span>
                 </div>
                 <p className="text-[10px] text-stone-500 text-center pt-1">
-                  PAID VIA {paymentLabel} (APPROVED)
+                  {paymentLabel} · {order.paymentStatus.toUpperCase()}
                 </p>
               </div>
 
@@ -370,25 +354,10 @@ export function OrderDetailsModal({
             <button
               type="button"
               onClick={handlePrint}
-              disabled={isPrinting}
               className="flex h-8 items-center gap-1.5 rounded-lg border border-[#E7E5E4] bg-white px-2.5 text-xs font-medium text-[#292524] shadow-2xs hover:border-[#F15A24] hover:text-[#F15A24] transition cursor-pointer disabled:opacity-50"
             >
-              {printSuccess ? (
-                <>
-                  <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="text-emerald-700 font-semibold">Printed</span>
-                </>
-              ) : isPrinting ? (
-                <>
-                  <Clock className="h-3.5 w-3.5 animate-spin text-[#F15A24]" />
-                  <span>Printing...</span>
-                </>
-              ) : (
-                <>
-                  <Printer className="h-3.5 w-3.5" />
-                  <span>Print Ticket</span>
-                </>
-              )}
+              <Printer className="h-3.5 w-3.5" />
+              <span>Print Ticket</span>
             </button>
           </div>
         </div>

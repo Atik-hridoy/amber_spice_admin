@@ -2,6 +2,7 @@ import { ExternalLink, Terminal } from 'lucide-react'
 import { API_DOCS_URL } from '../../services/api-tester-service'
 import { TesterCollection } from './tester-collection'
 import { TesterMenuIds } from './tester-menu-ids'
+import { TesterOrderIds } from './tester-order-ids'
 import { TesterRequestBar } from './tester-request-bar'
 import { TesterRequestEditor } from './tester-request-editor'
 import { TesterResponse } from './tester-response'
@@ -25,6 +26,7 @@ export function ApiTesterView() {
           <div><h2 className="text-sm font-bold text-stone-800">{selected.name}</h2><p className="mt-1 text-xs text-stone-500">{selected.description}</p><p className="mt-2 text-[11px] text-stone-500">Fill editable templates before Send. POST, PUT, PATCH and DELETE change real backend records.</p></div>
           <TesterRequestBar request={tester.request} isLoading={tester.isLoading} onChange={tester.update} onSend={() => void tester.send()} onCancel={tester.cancel} />
           {selected.resource && <TesterMenuIds variables={tester.request.variables} disabled={tester.isLoading} onVariable={tester.variable} />}
+          {selected.resource === 'order' && <TesterOrderIds variables={tester.request.variables} disabled={tester.isLoading} onVariable={tester.variable} />}
           {selected.fields?.length ? <details className="rounded-xl bg-stone-50 p-3 text-xs text-stone-500"><summary className="cursor-pointer font-semibold">API fields (* required)</summary><p className="mt-2 leading-relaxed">{selected.fields.join(', ')}</p></details> : null}
           <TesterRequestEditor key={selected.id} request={tester.request} disabled={tester.isLoading} onChange={tester.update} onVariable={tester.variable} />
         </section>

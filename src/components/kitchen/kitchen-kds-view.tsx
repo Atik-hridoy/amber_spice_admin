@@ -8,7 +8,6 @@ import {
   Eye,
   Flame,
   LayoutGrid,
-  Plus,
   Printer,
   Search,
   ShoppingBag,
@@ -20,20 +19,20 @@ import { OrderDetailsModal } from './order-details-modal'
 
 interface KitchenKdsViewProps {
   orders: Order[]
-  onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => void
-  onAddTicket?: (order: Order) => void
+  onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<boolean>
+  busy?: boolean
   onReportLowStock?: (alert: {
     ingredientName: string
     stockRemainingPercent: number
     note: string
-  }) => void
+  }) => Promise<void>
   inventoryList?: { id: string; name: string; currentStock: number; unit: string }[]
 }
 
 export function KitchenKdsView({
   orders,
   onUpdateOrderStatus,
-  onAddTicket,
+  busy,
   onReportLowStock,
   inventoryList = [],
 }: KitchenKdsViewProps) {
@@ -43,22 +42,15 @@ export function KitchenKdsView({
   const [stageFilter, setStageFilter] = useState<'all' | 'pending' | 'preparing' | 'ready'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<Order | null>(null)
-  const [isNewTicketOpen, setIsNewTicketOpen] = useState(false)
 
   // Stock alert modal state (Chef alerts Manager & Staff)
   const [isStockAlertModalOpen, setIsStockAlertModalOpen] = useState(false)
-  const [selectedIngredient, setSelectedIngredient] = useState('Pure Saffron Threads (Kashmir Super Negin)')
+  const [selectedIngredient, setSelectedIngredient] = useState('')
   const [stockRemainingPercent, setStockRemainingPercent] = useState(20)
   const [stockAlertNote, setStockAlertNote] = useState('')
   const [stockAlertSuccess, setStockAlertSuccess] = useState<string | null>(null)
-
-  // New ticket form state
-  const [newCustomerName, setNewCustomerName] = useState('')
-  const [newDiningType, setNewDiningType] = useState<'delivery' | 'takeaway' | 'dine-in'>('delivery')
-  const [newDishName, setNewDishName] = useState('Royal Chicken Dum Biryani')
-  const [newDishStation, setNewDishStation] = useState<'biryani' | 'curry' | 'grill' | 'breads'>('biryani')
-  const [newDishQuantity, setNewDishQuantity] = useState(1)
-  const [newDishPrice, setNewDishPrice] = useState(14.5)
+  const [stockAlertError, setStockAlertError] = useState('')
+  const [stockAlertSending, setStockAlertSending] = useState(false)
 
   // Filter orders by active kitchen status (live tickets)
   const liveOrders = orders.filter(
@@ -97,59 +89,18 @@ export function KitchenKdsView({
     return true
   })
 
-  const handleCreateTicket = (e: React.FormEvent) => {
+  const handleSendStockAlert = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newCustomerName.trim()) return
-
-    const newOrder: Order = {
-      id: `ord-${Date.now()}`,
-      orderNumber: `#AS-${Math.floor(2000 + Math.random() * 900)}`,
-      customerName: newCustomerName,
-      customerPhone: '+353 87 ' + Math.floor(1000000 + Math.random() * 9000000),
-      diningType: newDiningType,
-      tableNumber: newDiningType === 'dine-in' ? 'Table 5' : undefined,
-      status: 'pending',
-      totalAmount: newDishPrice * newDishQuantity,
-      paymentStatus: 'paid',
-      paymentMethod: 'card',
-      createdAt: 'Just now',
-      estimatedTimeMinutes: 15,
-      elapsedMinutes: 1,
-      items: [
-        {
-          id: `item-${Date.now()}`,
-          name: newDishName,
-          quantity: newDishQuantity,
-          price: newDishPrice,
-          station: newDishStation,
-        },
-      ],
-    }
-
-    if (onAddTicket) {
-      onAddTicket(newOrder)
-    }
-    setIsNewTicketOpen(false)
-    setNewCustomerName('')
-  }
-
-  const handleSendStockAlert = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (onReportLowStock) {
-      onReportLowStock({
-        ingredientName: selectedIngredient,
-        stockRemainingPercent,
-        note:
-          stockAlertNote.trim() ||
-          `Chef flagged: ${selectedIngredient} is running out soon (~${stockRemainingPercent}% left). Restock needed before rush.`,
-      })
-    }
-    setStockAlertSuccess(`Alert sent to Staff & Manager for "${selectedIngredient}"!`)
-    setTimeout(() => {
-      setStockAlertSuccess(null)
-      setIsStockAlertModalOpen(false)
-      setStockAlertNote('')
-    }, 1800)
+    if (stockAlertSending) return
+    setStockAlertError('')
+    const name = selectedIngredient || inventoryList[0]?.name
+    if (!name || !onReportLowStock) { setStockAlertError('No saved inventory ingredient is available.'); return }
+    setStockAlertSending(true)
+    try {
+      await onReportLowStock({ ingredientName: name, stockRemainingPercent, note: stockAlertNote.trim() })
+      setStockAlertSuccess(`Stock alert for "${name}" saved for operations.`)
+    } catch (error) { setStockAlertError(error instanceof Error ? error.message : 'Unable to save stock alert. Retry sending.') }
+    finally { setStockAlertSending(false) }
   }
 
   return (
@@ -168,21 +119,14 @@ export function KitchenKdsView({
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             type="button"
-            onClick={() => setIsStockAlertModalOpen(true)}
+            onClick={() => { setStockAlertSuccess(null); setStockAlertError(''); setIsStockAlertModalOpen(true) }}
             className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3.5 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-500/20 active:scale-95 transition cursor-pointer"
           >
             <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
             <span>⚠️ Report Stock Running Low</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setIsNewTicketOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#F15A24] px-3.5 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:brightness-105 active:scale-95 transition cursor-pointer"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>New Ticket</span>
-          </button>
+
         </div>
       </div>
 
@@ -485,7 +429,7 @@ export function KitchenKdsView({
                             {isIncoming && (
                               <button
                                 type="button"
-                                onClick={() => onUpdateOrderStatus(order.id, 'preparing')}
+                                disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'preparing')}
                                 className="inline-flex items-center gap-1 rounded-lg bg-[#F15A24] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:brightness-105 active:scale-95 transition cursor-pointer"
                               >
                                 <Flame className="h-3 w-3" />
@@ -495,7 +439,7 @@ export function KitchenKdsView({
                             {isInProgress && (
                               <button
                                 type="button"
-                                onClick={() => onUpdateOrderStatus(order.id, 'ready')}
+                                disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'ready')}
                                 className="inline-flex items-center gap-1 rounded-lg bg-[#059669] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:bg-[#047857] active:scale-95 transition cursor-pointer"
                               >
                                 <Check className="h-3.5 w-3.5" />
@@ -505,11 +449,11 @@ export function KitchenKdsView({
                             {isReady && (
                               <button
                                 type="button"
-                                onClick={() => onUpdateOrderStatus(order.id, 'delivered')}
+                                disabled title="Handover is managed in Orders"
                                 className="inline-flex items-center gap-1 rounded-lg bg-[#1C1917] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:bg-[#292524] active:scale-95 transition cursor-pointer"
                               >
                                 <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                                <span>Handover</span>
+                                <span>Awaiting handover</span>
                               </button>
                             )}
 
@@ -517,7 +461,7 @@ export function KitchenKdsView({
                             {(isInProgress || isReady) && (
                               <button
                                 type="button"
-                                onClick={() => alert(`Docket for ${order.orderNumber} sent to kitchen printer!`)}
+                                onClick={() => setSelectedOrderForModal(order)}
                                 title="Print Kitchen Docket"
                                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white text-stone-600 hover:border-[#F15A24] hover:text-[#F15A24] transition cursor-pointer"
                               >
@@ -589,7 +533,7 @@ export function KitchenKdsView({
                     </div>
                     <button
                       type="button"
-                      onClick={() => onUpdateOrderStatus(order.id, 'preparing')}
+                      disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'preparing')}
                       className="w-full rounded-lg bg-[#F15A24] py-1.5 text-xs font-semibold text-white shadow-2xs hover:brightness-105 active:scale-98 transition cursor-pointer"
                     >
                       Fire Ticket
@@ -641,7 +585,7 @@ export function KitchenKdsView({
                     </div>
                     <button
                       type="button"
-                      onClick={() => onUpdateOrderStatus(order.id, 'ready')}
+                      disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'ready')}
                       className="w-full rounded-lg bg-[#059669] py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#047857] active:scale-98 transition cursor-pointer"
                     >
                       Mark Ready
@@ -693,10 +637,10 @@ export function KitchenKdsView({
                     </div>
                     <button
                       type="button"
-                      onClick={() => onUpdateOrderStatus(order.id, 'delivered')}
+                      disabled title="Handover is managed in Orders"
                       className="w-full rounded-lg bg-[#1C1917] py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#292524] active:scale-98 transition cursor-pointer"
                     >
-                      Handover
+                      Awaiting operations handover
                     </button>
                   </div>
                 ))}
@@ -707,131 +651,10 @@ export function KitchenKdsView({
 
       {/* Order Details / Thermal Slip Modal (Figma node #24057:12413) */}
       <OrderDetailsModal
-        order={selectedOrderForModal}
+        order={orders.find(order => order.id === selectedOrderForModal?.id) || null}
         onClose={() => setSelectedOrderForModal(null)}
-        onUpdateStatus={onUpdateOrderStatus}
+
       />
-
-      {/* New Ticket Modal */}
-      {isNewTicketOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            onClick={() => setIsNewTicketOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-          />
-          <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl border border-stone-200">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h3 className="font-serif text-base font-bold text-stone-900">
-                Fire New Kitchen Ticket
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsNewTicketOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 hover:bg-stone-100 transition cursor-pointer"
-              >
-                <X className="h-4 w-4 text-stone-600" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateTicket} className="mt-4 space-y-3.5 text-xs">
-              <div>
-                <label className="font-semibold text-stone-700 block mb-1">Customer / Table Name</label>
-                <input
-                  type="text"
-                  required
-                  value={newCustomerName}
-                  onChange={(e) => setNewCustomerName(e.target.value)}
-                  placeholder="e.g. Liam Ward or Table 8"
-                  className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-none focus:border-[#F15A24]"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-stone-700 block mb-1">Service Type</label>
-                <select
-                  value={newDiningType}
-                  onChange={(e) => setNewDiningType(e.target.value as any)}
-                  className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-none focus:border-[#F15A24]"
-                >
-                  <option value="delivery">Delivery</option>
-                  <option value="takeaway">Pickup / Collection</option>
-                  <option value="dine-in">Dine-In Restaurant</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="font-semibold text-stone-700 block mb-1">Dish Name</label>
-                <select
-                  value={newDishName}
-                  onChange={(e) => {
-                    const dish = e.target.value
-                    setNewDishName(dish)
-                    if (dish.includes('Biryani')) {
-                      setNewDishStation('biryani')
-                      setNewDishPrice(16.5)
-                    } else if (dish.includes('Chicken') || dish.includes('Curry')) {
-                      setNewDishStation('curry')
-                      setNewDishPrice(14.5)
-                    } else if (dish.includes('Tandoori') || dish.includes('Tikka')) {
-                      setNewDishStation('grill')
-                      setNewDishPrice(13.5)
-                    } else {
-                      setNewDishStation('breads')
-                      setNewDishPrice(3.5)
-                    }
-                  }}
-                  className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-none focus:border-[#F15A24]"
-                >
-                  <option value="Royal Chicken Dum Biryani">Royal Chicken Dum Biryani (€16.50)</option>
-                  <option value="Kashmiri Lamb Rogan Josh">Kashmiri Lamb Rogan Josh (€16.99)</option>
-                  <option value="Old Delhi Butter Chicken">Old Delhi Butter Chicken (€14.50)</option>
-                  <option value="Flame-Grilled Tandoori Chicken">Flame-Grilled Tandoori Chicken (€13.50)</option>
-                  <option value="Garlic Butter Naan">Garlic Butter Naan (€3.50)</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="font-semibold text-stone-700 block mb-1">Quantity</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={newDishQuantity}
-                    onChange={(e) => setNewDishQuantity(Number(e.target.value))}
-                    className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-none focus:border-[#F15A24]"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="font-semibold text-stone-700 block mb-1">Station</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={newDishStation.toUpperCase()}
-                    className="w-full rounded-xl border border-stone-200 bg-stone-100 p-2.5 text-stone-600 font-bold uppercase"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsNewTicketOpen(false)}
-                  className="flex-1 rounded-xl border border-stone-200 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-[#F15A24] py-2.5 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-98 transition cursor-pointer"
-                >
-                  Fire Ticket
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* 4. Chef Stock-Running-Low Alert Modal */}
       {isStockAlertModalOpen && (
@@ -863,36 +686,23 @@ export function KitchenKdsView({
             {stockAlertSuccess ? (
               <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 text-xs text-center space-y-1">
                 <CheckCircle2 className="h-6 w-6 text-emerald-600 mx-auto" />
-                <p className="font-bold text-sm">Alert Sent Successfully!</p>
+                <p className="font-bold text-sm">Stock Alert Saved</p>
                 <p className="text-[11px]">{stockAlertSuccess}</p>
               </div>
             ) : (
               <form onSubmit={handleSendStockAlert} className="space-y-4 text-xs">
+                {stockAlertError && <p role="alert" className="text-red-700">{stockAlertError}</p>}
                 <div>
                   <label className="font-bold text-stone-700 block mb-1">
                     Select Ingredient Running Low:
                   </label>
                   <select
-                    value={selectedIngredient}
+                    value={selectedIngredient || inventoryList[0]?.name || ''}
                     onChange={(e) => setSelectedIngredient(e.target.value)}
                     className="w-full rounded-xl border border-stone-200 bg-white p-2.5 text-stone-900 font-medium focus:outline-none focus:border-amber-500"
                   >
-                    {inventoryList.length > 0 ? (
-                      inventoryList.map((item) => (
-                        <option key={item.id} value={item.name}>
-                          {item.name} ({item.currentStock} {item.unit} remaining)
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="Pure Saffron Threads (Kashmir Super Negin)">Pure Saffron Threads (Kashmir Super Negin)</option>
-                        <option value="Irish Halal Certified Chicken Breasts">Irish Halal Certified Chicken Breasts</option>
-                        <option value="Basmati Rice Premium Aged Extra Long">Basmati Rice Premium Aged Extra Long</option>
-                        <option value="Organic Fresh Cream & Ghee">Organic Fresh Cream &amp; Ghee</option>
-                        <option value="Jumbo Tiger Prawns (Wild Catch)">Jumbo Tiger Prawns (Wild Catch)</option>
-                        <option value="Kashmiri Chili & Garam Masala Powder">Kashmiri Chili &amp; Garam Masala Powder</option>
-                      </>
-                    )}
+                    {!inventoryList.length && <option value="">No saved ingredients</option>}
+                    {inventoryList.map(item => <option key={item.id} value={item.name}>{item.name} ({item.currentStock} {item.unit} remaining)</option>)}
                   </select>
                 </div>
 
@@ -948,7 +758,7 @@ export function KitchenKdsView({
                     className="flex-1 rounded-xl bg-amber-600 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 active:scale-98 transition cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <AlertTriangle className="h-3.5 w-3.5" />
-                    <span>Send Alert 📢</span>
+                    <span>{stockAlertSending ? 'Saving?' : 'Save Stock Alert'}</span>
                   </button>
                 </div>
               </form>

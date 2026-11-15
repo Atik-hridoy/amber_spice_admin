@@ -38,10 +38,13 @@ export const API_ENDPOINTS = {
   // Orders & Kitchen Display (KDS)
   ORDERS: {
     LIST: 'orders/',
+    ordersList: (query?: string) => (query ? `orders/?${query}` : 'orders/'),
     orderDetail: (id: number | string) => `orders/${id}/`,
-    updateStatus: (id: number | string) => `orders/${id}/update-status/`,
-    KITCHEN_ACTIVE: 'orders/kitchen/active/',
-    forwardToChef: (id: number | string) => `orders/${id}/forward-chef/`,
+    updateStatus: (id: number | string) => `orders/${id}/update_status/`,
+    KITCHEN: 'orders/kitchen/',
+    kitchenOrders: (station?: string) => (station && station !== 'all' ? `orders/kitchen/?station=${station}` : 'orders/kitchen/'),
+    DELIVERIES: 'orders/deliveries/',
+    assignDelivery: (id: number | string) => `orders/${id}/assign_delivery/`,
   },
 
   // Inventory & Stock Management

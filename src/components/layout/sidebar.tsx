@@ -74,6 +74,7 @@ export function Sidebar({
     badge?: number | string
     badgeColor?: string
   }[] = [
+    { id: 'content', label: 'Content & Messages', icon: Settings },
     {
       id: 'analytics',
       label: 'Analytics',
@@ -180,22 +181,7 @@ export function Sidebar({
           <div className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[11px] flex items-center justify-between">
             <span className="text-stone-400 font-medium">Logged Role:</span>
             <span className="font-bold text-amber-400 capitalize flex items-center gap-1">
-              {currentUser?.role === 'super_admin' || currentUser?.role === 'manager' ? (
-                <>
-                  <ShieldCheck className="h-3 w-3 text-amber-400" />
-                  <span>Whole Manager</span>
-                </>
-              ) : currentUser?.role === 'chef' ? (
-                <>
-                  <Flame className="h-3 w-3 text-orange-400" />
-                  <span>Chef (Kitchen KDS)</span>
-                </>
-              ) : (
-                <>
-                  <ClipboardList className="h-3 w-3 text-blue-400" />
-                  <span>Operations Staff</span>
-                </>
-              )}
+              {currentUser?.roleDisplay || currentUser?.role}
             </span>
           </div>
 
@@ -329,12 +315,12 @@ export function Sidebar({
             <div className="flex items-center gap-2.5">
               <img
                 src={currentUser?.avatar || '/figma-assets/about/about-chef-tariq.png'}
-                alt={currentUser?.fullName || 'Tariq Al-Hassan'}
+                alt={currentUser?.fullName || 'Staff account'}
                 className="h-8 w-8 rounded-lg object-cover border border-white/15 shadow-xs"
               />
               <div className="min-w-0 max-w-[125px]">
                 <p className="text-xs font-semibold text-white leading-tight truncate">
-                  {currentUser?.fullName || 'Tariq Al-Hassan'}
+                  {currentUser?.fullName || 'Staff account'}
                 </p>
                 <p className="text-[10px] text-amber-400 font-medium truncate mt-0.5">
                   {currentUser?.roleDisplay || 'admin • Profile'}
@@ -346,6 +332,7 @@ export function Sidebar({
               <button
                 type="button"
                 title="Account Settings"
+                onClick={() => handleSelect('account')}
                 className="p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition cursor-pointer"
               >
                 <Settings className="h-3.5 w-3.5" />

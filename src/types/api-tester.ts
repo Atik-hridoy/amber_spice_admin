@@ -1,7 +1,7 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 export type BodyMode = 'json' | 'multipart' | 'none'
 export type AuthMode = 'session' | 'manual' | 'none'
-export type MenuResource = 'category' | 'dish'
+export type MenuResource = 'category' | 'dish' | 'order'
 
 export interface ApiPreset {
   id: string

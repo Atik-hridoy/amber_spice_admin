@@ -15,6 +15,7 @@ interface Schema {
   anyOf?: Schema[]
 }
 interface Operation {
+  security?: Record<string, string[]>[]
   summary?: string
   description?: string
   operationId?: string
@@ -55,8 +56,8 @@ export function presetsFromSchema(document: Document, curated: ApiPreset[]): Api
   const discovered: ApiPreset[] = []
   for (const [path, operations] of Object.entries(document.paths)) {
     if (!path.startsWith('/api/v1/')) continue
-    const resource = path.includes('/menu/categories/') ? 'category' : path.includes('/menu/dishes/') ? 'dish' : undefined
-    const relative = path.slice('/api/v1/'.length).replace(/\{id\}/g, resource ? `{${resource}Id}` : '{id}')
+    const resource = path.includes('/menu/categories/') ? 'category' : path.includes('/menu/dishes/') ? 'dish' : path.includes('/orders/') ? 'order' : undefined
+    const relative = path.slice('/api/v1/'.length).replace(/\{id\}/g, resource ? `{${resource}Id}` : '{id}').replace('{order_number}', '{orderNumber}')
     for (const [verb, operation] of Object.entries(operations)) {
       const method = verb.toUpperCase() as HttpMethod
       if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) continue
@@ -68,7 +69,7 @@ export function presetsFromSchema(document: Document, curated: ApiPreset[]): Api
       discovered.push({ id: `schema:${method}:${path}`, name: operation.summary || operation.operationId?.replaceAll('_', ' ') || `${method} ${relative}`,
         category: operation.tags?.[0] || relative.split('/')[0], method, url: `${ADMIN_API_BASE_URL}/${relative}`,
         description: operation.description || path, resource, fields,
-        auth: /\/auth\/(login|register|token\/refresh)\//.test(path) ? 'none' : undefined,
+        auth: operation.security?.some(requirement => Object.keys(requirement).length === 0) || operation.security?.length === 0 || /\/auth\/(login|register|token\/refresh)\//.test(path) ? 'none' : undefined,
         body: schema ? JSON.stringify(template(schema, document), null, 2) : undefined,
         bodyMode: schema ? content['application/json'] ? 'json' : 'multipart' : 'none',
       })

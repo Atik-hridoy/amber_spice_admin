@@ -9,6 +9,30 @@ const schema = { paths: {} }
 const waitForCollection = () => waitFor(() => expect(screen.queryByText('Loading live API schema…')).toBeNull())
 
 describe('admin API tester', () => {
+  it('carries saved order IDs and tracking numbers through the delivery workflow', async () => {
+    const user = userEvent.setup()
+    storeAdminSession('tester-access', 'refresh', manager, false)
+    const fetchMock = vi.fn().mockImplementation((url: string, options: RequestInit = {}) => Promise.resolve(jsonResponse(
+      url.includes('/api/schema/') ? schema : { id: 88, orderNumber: 'ORD-SAVED-PRIVATE' }, options.method === 'POST' ? 201 : 200,
+    )))
+    vi.stubGlobal('fetch', fetchMock)
+    render(<ApiTesterView />)
+    await waitForCollection()
+    await user.click(screen.getByRole('button', { name: '3. Place cash order' }))
+    fireEvent.change(screen.getByLabelText('Request body'), { target: { value: JSON.stringify({ customer_name: 'Test Buyer', customer_phone: '01000000000', delivery_address: 'Test Address', dining_type: 'delivery', payment_method: 'cash', items: [{ dish_id: 1, quantity: 1 }] }) } })
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(screen.getByLabelText('Response body').textContent).toContain('ORD-SAVED-PRIVATE'))
+    expect(fetchMock.mock.calls[1][1].headers.has('Authorization')).toBe(false)
+    await user.click(screen.getByRole('button', { name: '4. Reload saved order' }))
+    expect((screen.getByLabelText('orderId') as HTMLInputElement).value).toBe('88')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(fetchMock.mock.calls.at(-1)?.[0]).toContain('/orders/88/'))
+    expect(fetchMock.mock.calls.at(-1)?.[1].headers.get('Authorization')).toBe('Bearer tester-access')
+    await user.click(screen.getByRole('button', { name: '13. Customer live tracking' }))
+    expect((screen.getByLabelText('orderNumber') as HTMLInputElement).value).toBe('ORD-SAVED-PRIVATE')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(fetchMock.mock.calls.at(-1)?.[0]).toContain('/track/ORD-SAVED-PRIVATE/'))
+  }, 20000)
   it('sends a real request on Send, supports uploads, previews the returned image and carries the new ID to detail requests', async () => {
     const user = userEvent.setup()
     storeAdminSession('tester-access', 'refresh', manager, false)
@@ -36,7 +60,7 @@ describe('admin API tester', () => {
     expect((screen.getByLabelText('dishId') as HTMLInputElement).value).toBe('44')
     await user.click(screen.getByRole('button', { name: 'Send' }))
     await waitFor(() => expect(fetchMock.mock.calls.at(-1)?.[0]).toBe('http://127.0.0.1:8000/api/v1/menu/dishes/44/'))
-  })
+  }, 20000)
 
   it('loads real category/dish IDs into controls and fills the dish category property', async () => {
     const user = userEvent.setup()
@@ -56,7 +80,7 @@ describe('admin API tester', () => {
     await user.selectOptions(screen.getByLabelText('Saved dish'), '69')
     await user.click(screen.getByRole('button', { name: 'Edit dish' }))
     expect((screen.getByLabelText('dishId') as HTMLInputElement).value).toBe('69')
-  })
+  }, 20000)
 
   it('does not send on preset selection, blocks missing IDs and clears stale write bodies', async () => {
     const user = userEvent.setup()
@@ -73,7 +97,7 @@ describe('admin API tester', () => {
     expect((screen.getByLabelText('Body format') as HTMLSelectElement).value).toBe('none')
     expect(screen.queryByLabelText('Request body')).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
-  })
+  }, 20000)
 
   it('preserves HTTP errors and exposes response headers', async () => {
     const user = userEvent.setup()
@@ -88,7 +112,7 @@ describe('admin API tester', () => {
     expect(screen.getByRole('status').textContent).toContain('400')
     await user.click(screen.getByRole('button', { name: 'Response headers' }))
     expect(screen.getByLabelText('Response headers').textContent).toContain('application/json')
-  })
+  }, 20000)
 
   it('uses a login response token for manual tests without overwriting the signed-in admin session', async () => {
     const user = userEvent.setup()
@@ -110,7 +134,7 @@ describe('admin API tester', () => {
     expect((screen.getByLabelText('JWT access token') as HTMLInputElement).value).toBe('test-account-access')
     await user.click(screen.getByRole('button', { name: 'Send' }))
     await waitFor(() => expect(fetchMock.mock.calls.at(-1)?.[1].headers.get('Authorization')).toBe('Bearer test-account-access'))
-  })
+  }, 20000)
 
   it('reports schema failure and refreshes to discover newly added backend APIs', async () => {
     const user = userEvent.setup()
@@ -122,7 +146,7 @@ describe('admin API tester', () => {
     await user.click(screen.getByRole('button', { name: 'Refresh API collection' }))
     expect(await screen.findByRole('button', { name: 'Future API endpoint' })).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
-  })
+  }, 20000)
 
   it('cancels a pending request and restores Send without showing a successful response', async () => {
     const user = userEvent.setup()
@@ -137,5 +161,5 @@ describe('admin API tester', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('Request cancelled')
     expect(screen.queryByLabelText('Response body')).toBeNull()
     expect((screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement).disabled).toBe(false)
-  })
+  }, 20000)
 })

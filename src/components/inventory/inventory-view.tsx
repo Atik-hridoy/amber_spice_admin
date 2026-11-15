@@ -14,22 +14,22 @@ import {
   Truck,
   X,
 } from 'lucide-react'
-import type { InventoryItem, WastageRecord } from '../../types/admin'
+import type { InventoryItem } from '../../types/admin'
 import type { InventoryCategory } from '../../types/inventory-category'
 import { inventoryCategoryService } from '../../services/inventory-category-service'
 import { inventoryService, type InventoryItemPayload } from '../../services/inventory-service'
+import { adminRequest } from '../../services/api-client'
 import { AdminApiError } from '../../services/api-error'
 import { InventoryCategoriesTab } from './inventory-categories-tab'
 
 interface InventoryViewProps {
   inventory?: InventoryItem[]
   onRestockItem?: (itemId: string, addAmount: number) => void
-  onLogWastage?: (record: WastageRecord) => void
 }
 
 const COMMON_UNITS = ['kg', 'ltr', 'bags', 'packs', 'bottles', 'cans', 'boxes', 'grams', 'bunches']
 
-export function InventoryView({ inventory: initialInventory, onRestockItem, onLogWastage }: InventoryViewProps) {
+export function InventoryView({ inventory: initialInventory, onRestockItem }: InventoryViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<'items' | 'categories'>('items')
   const [items, setItems] = useState<InventoryItem[]>(initialInventory || [])
   const [categories, setCategories] = useState<InventoryCategory[]>([])
@@ -50,7 +50,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem, onLo
   const [selectedIngredientId, setSelectedIngredientId] = useState(items[0]?.id ? String(items[0].id) : '')
   const [wasteQuantity, setWasteQuantity] = useState(1.0)
   const [wasteReason, setWasteReason] = useState<'Expired' | 'Damaged in transit' | 'Kitchen prep error' | 'Storage defect / Spoilage'>('Kitchen prep error')
-  const [wasteReporter, setWasteReporter] = useState('Master Chef Tariqul')
+  const [wasteReporter, setWasteReporter] = useState('')
 
   // Form States for Add/Edit
   const [formName, setFormName] = useState('')
@@ -68,8 +68,8 @@ export function InventoryView({ inventory: initialInventory, onRestockItem, onLo
     setItemsError(null)
     try {
       const [fetchedItems, fetchedCategories] = await Promise.all([
-        inventoryService.list().catch(() => initialInventory || []),
-        inventoryCategoryService.list().catch(() => []),
+        inventoryService.list(),
+        inventoryCategoryService.list(),
       ])
       setItems(fetchedItems)
       setCategories(fetchedCategories)
@@ -425,7 +425,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem, onLo
 
               <button
                 type="button"
-                onClick={() => setIsWastageModalOpen(true)}
+                onClick={() => { setFormError(null); setIsWastageModalOpen(true) }}
                 className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:border-red-300 hover:text-red-600 transition cursor-pointer shrink-0"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -1047,23 +1047,19 @@ export function InventoryView({ inventory: initialInventory, onRestockItem, onLo
               </button>
             </div>
 
+            {formError && <p role="alert" className="text-sm text-red-700">{formError}</p>}
             <form
-              onSubmit={(e) => {
+              onSubmit={async e => {
                 e.preventDefault()
-                const ingredient = items.find((i) => String(i.id) === selectedIngredientId)
-                if (ingredient) {
-                  onLogWastage?.({
-                    id: `WST-${Date.now().toString().slice(-4)}`,
-                    ingredientId: String(ingredient.id),
-                    ingredientName: ingredient.name,
-                    quantity: wasteQuantity,
-                    unit: ingredient.unit,
-                    reason: wasteReason,
-                    reportedBy: wasteReporter,
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                  })
+                if (!selectedIngredientId) return
+                setIsSubmitting(true)
+                setFormError(null)
+                try {
+                  await adminRequest('inventory/wastage/', { method: 'POST', requireAuth: true, body: JSON.stringify({ item: Number(selectedIngredientId), quantity: wasteQuantity, reason: wasteReason }) })
+                  await loadInventoryData()
                   setIsWastageModalOpen(false)
-                }
+                } catch (error) { setFormError(error instanceof Error ? error.message : 'Unable to save wastage. Retry saving.') }
+                finally { setIsSubmitting(false) }
               }}
               className="mt-4 space-y-4 text-xs"
             >

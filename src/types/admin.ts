@@ -11,6 +11,8 @@ export type AdminView =
   | 'transactions'
   | 'api-tester'
   | 'roles'
+  | 'content'
+  | 'account'
 
 export type OrderStatus =
   | 'pending'
@@ -36,7 +38,7 @@ export interface DeliveryDriver {
   id: string
   name: string
   phone: string
-  vehicle: 'E-Bike' | 'Scooter' | 'Car'
+  vehicle?: 'E-Bike' | 'Scooter' | 'Car'
   status: 'available' | 'on-delivery'
 }
 
@@ -50,6 +52,12 @@ export interface Order {
   status: OrderStatus
   items: OrderItem[]
   totalAmount: number
+  subtotal: number
+  tax: number
+  deliveryFee: number
+  discountAmount: number
+  couponCode: string
+  scheduledFor?: string | null
   paymentStatus: 'paid' | 'pending' | 'refunded'
   paymentMethod: 'card' | 'cash' | 'apple-pay'
   createdAt: string

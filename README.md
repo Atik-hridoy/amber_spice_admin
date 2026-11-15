@@ -1,5 +1,11 @@
 # Amber Spice Admin
 
+## Orders and deliveries
+
+Orders, Kitchen KDS, courier assignment and cash receipt now use saved backend data, with loading/error/retry states and polling. Operations can create orders from the real menu; kitchen preparation, courier dispatch and delivery follow backend-enforced transitions. Delivery users see only assigned orders. API Studio has a numbered quote-to-cash workflow and selectors for real menu, order and courier IDs.
+
+See `../docs/delivery-pipeline.md` for API properties, authentication, local verification and remaining provider integrations. Card/wallet payments, courier GPS and delivery eligibility checks are not yet integrated.
+
 ## Menu categories
 
 Open **Products → Add Category** to create a saved menu category. Name is required; description, image, display order, visibility and a custom slug are optional. Use **Choose Image** to select a JPG, PNG or WebP file up to 5 MB, preview it and replace/remove it before saving. An external image URL is also supported. The modal displays backend validation errors and stays open when saving fails.

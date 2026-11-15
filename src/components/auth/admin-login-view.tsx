@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react'
 import {
   AlertCircle,
-  CheckCircle2,
   Eye,
   EyeOff,
   Flame,
   Lock,
   LogIn,
   Mail,
-  ShieldAlert,
-  ShieldCheck,
   Sparkles,
 } from 'lucide-react'
 import type { AdminUser } from '../../types/admin'
@@ -57,18 +54,12 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
     }
   }, [])
 
-  const handleFillCredentials = (emailVal: string, passVal: string) => {
-    setIdentifier(emailVal)
-    setPassword(passVal)
-    setErrorMessage(null)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMessage(null)
 
     const trimmedIdentifier = identifier.trim()
-    const trimmedPassword = password.trim()
+    const trimmedPassword = password
 
     if (!trimmedIdentifier || !trimmedPassword) {
       setErrorMessage('Please provide both username/email and your password.')
@@ -92,6 +83,10 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
 
       if (response.ok) {
         const data = await response.json()
+        if (data.user.role === 'customer') {
+          setErrorMessage('Use a restaurant staff account for this portal.')
+          return
+        }
         const userObj: AdminUser = {
           id: data.user.id,
           uuid: data.user.uuid,
@@ -121,125 +116,7 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
         'Invalid email or password. Please verify your credentials.'
       setErrorMessage(msg)
     } catch {
-      // 2. Intelligent local fallback if backend is offline during frontend-only previews
-      if (
-        (trimmedIdentifier === 'manager@amberspice.com' ||
-          trimmedIdentifier === 'superadmin@amberspice.com' ||
-          trimmedIdentifier === 'manager' ||
-          trimmedIdentifier === 'superadmin') &&
-        (trimmedPassword === 'Manager@2026!' || trimmedPassword === 'SuperAdmin@2026!')
-      ) {
-        const fallbackSuperAdmin: AdminUser = {
-          id: 1,
-          uuid: 'manager-master-uuid',
-          username: 'manager',
-          email: 'manager@amberspice.com',
-          fullName: 'Tariq Al-Hassan (Whole Manager)',
-          role: 'manager',
-          roleDisplay: 'Super Admin (Whole Admin Manager)',
-          avatar: '/figma-assets/about/about-chef-tariq.png',
-          phone: '+353 (89) 948 5800',
-          isStaff: true,
-          isSuperAdmin: true,
-          permissions: ['*'],
-        }
-
-        if (rememberMe) {
-          localStorage.setItem('amber_admin_token', 'offline-manager-token')
-          localStorage.setItem('amber_admin_user', JSON.stringify(fallbackSuperAdmin))
-        }
-
-        onLoginSuccess(fallbackSuperAdmin)
-        return
-      }
-
-      if (
-        (trimmedIdentifier === 'staff@amberspice.com' || trimmedIdentifier === 'staff') &&
-        (trimmedPassword === 'Staff@2026!' || trimmedPassword === 'staff123')
-      ) {
-        const fallbackStaff: AdminUser = {
-          id: 3,
-          uuid: 'staff-master-uuid',
-          username: 'staff',
-          email: 'staff@amberspice.com',
-          fullName: 'Rahim Khan (Operations Staff)',
-          role: 'staff',
-          roleDisplay: 'Operations Staff (Dishes & Stock)',
-          avatar: '/figma-assets/about/about-chef-tariq.png',
-          phone: '+353 87 234 5678',
-          isStaff: true,
-          isSuperAdmin: false,
-          permissions: ['orders:view', 'orders:create', 'menu:manage', 'inventory:manage'],
-        }
-
-        if (rememberMe) {
-          localStorage.setItem('amber_admin_token', 'offline-staff-token')
-          localStorage.setItem('amber_admin_user', JSON.stringify(fallbackStaff))
-        }
-
-        onLoginSuccess(fallbackStaff)
-        return
-      }
-
-      if (
-        (trimmedIdentifier === 'chef@amberspice.com' ||
-          trimmedIdentifier === 'chef@restaurant.com' ||
-          trimmedIdentifier === 'chef') &&
-        (trimmedPassword === 'Chef@2026!' || trimmedPassword === 'kitchen123')
-      ) {
-        const fallbackChef: AdminUser = {
-          id: 4,
-          uuid: 'chef-master-uuid',
-          username: 'chef',
-          email: 'chef@amberspice.com',
-          fullName: 'Chef Marco Rossi (Head Chef)',
-          role: 'chef',
-          roleDisplay: 'Executive Chef (Kitchen KDS)',
-          avatar: '/figma-assets/about/about-chef-tariq.png',
-          phone: '+353 89 765 4321',
-          isStaff: true,
-          isSuperAdmin: false,
-          permissions: ['kitchen:view_orders', 'kitchen:update_status'],
-        }
-
-        if (rememberMe) {
-          localStorage.setItem('amber_admin_token', 'offline-chef-token')
-          localStorage.setItem('amber_admin_user', JSON.stringify(fallbackChef))
-        }
-
-        onLoginSuccess(fallbackChef)
-        return
-      }
-
-      if (
-        (trimmedIdentifier === 'admin@restaurant.com' || trimmedIdentifier === 'admin') &&
-        trimmedPassword === 'admin123'
-      ) {
-        const fallbackAdmin: AdminUser = {
-          id: 2,
-          uuid: 'admin-master-uuid',
-          username: 'admin',
-          email: 'admin@restaurant.com',
-          fullName: 'Owner Admin',
-          role: 'admin',
-          roleDisplay: 'Owner/Admin',
-          avatar: '/figma-assets/about/about-chef-tariq.png',
-          phone: '+353 (89) 948 5800',
-          isStaff: true,
-          isSuperAdmin: false,
-          permissions: ['*'],
-        }
-
-        if (rememberMe) {
-          localStorage.setItem('amber_admin_token', 'offline-admin-token')
-          localStorage.setItem('amber_admin_user', JSON.stringify(fallbackAdmin))
-        }
-
-        onLoginSuccess(fallbackAdmin)
-        return
-      }
-
-      setErrorMessage('Could not connect to backend server on http://127.0.0.1:8000. Please start the backend service or verify credentials.')
+      setErrorMessage('Cannot connect to the restaurant backend. Check the connection and retry sign in.')
     } finally {
       setIsLoading(false)
     }
@@ -291,7 +168,7 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
             ) : apiStatus === 'offline' ? (
               <>
                 <span className="h-2 w-2 rounded-full bg-amber-400" />
-                <span className="text-amber-400">Local / Standalone Mode</span>
+                <span className="text-amber-400">Backend unavailable</span>
               </>
             ) : (
               <>
@@ -391,91 +268,7 @@ export function AdminLoginView({ onLoginSuccess }: AdminLoginViewProps) {
           </button>
         </form>
 
-        {/* Quick 1-Click Credentials Helper */}
-        <div className="mt-7 pt-6 border-t border-stone-800/90 space-y-2.5">
-          <p className="text-[11px] font-bold text-stone-400 uppercase tracking-wider text-center">
-            ⚡ Quick 1-Click Role Login
-          </p>
 
-          {/* 1. Manager (Super Admin / Whole Access) */}
-          <button
-            type="button"
-            onClick={() =>
-              handleFillCredentials('manager@amberspice.com', 'Manager@2026!')
-            }
-            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 text-left transition group cursor-pointer"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300">
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                  <span>Manager</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-400 text-stone-950 font-black">
-                    SUPER ADMIN • ALL ACCESS
-                  </span>
-                </p>
-                <p className="text-[10px] text-stone-400 font-mono">
-                  manager@amberspice.com
-                </p>
-              </div>
-            </div>
-            <span className="text-[10px] font-semibold text-amber-300/80 group-hover:text-amber-200">
-              Autofill →
-            </span>
-          </button>
-
-          {/* 2. Operations Staff (Dishes, Inventory, Forward Orders) */}
-          <button
-            type="button"
-            onClick={() => handleFillCredentials('staff@amberspice.com', 'Staff@2026!')}
-            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10 text-left transition group cursor-pointer"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-300">
-                <ShieldAlert className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-blue-300 flex items-center gap-1.5">
-                  <span>Staff</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-400 text-stone-950 font-black">
-                    INVENTORY, DISHES &amp; ORDERS
-                  </span>
-                </p>
-                <p className="text-[10px] text-stone-400 font-mono">staff@amberspice.com</p>
-              </div>
-            </div>
-            <span className="text-[10px] font-semibold text-blue-300/80 group-hover:text-blue-200">
-              Autofill →
-            </span>
-          </button>
-
-          {/* 3. Chef (Kitchen KDS Only & Stock Alerts) */}
-          <button
-            type="button"
-            onClick={() => handleFillCredentials('chef@amberspice.com', 'Chef@2026!')}
-            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-orange-500/30 bg-orange-500/5 hover:bg-orange-500/10 text-left transition group cursor-pointer"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-orange-500/20 text-orange-300">
-                <CheckCircle2 className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-orange-300 flex items-center gap-1.5">
-                  <span>Chef</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-orange-400 text-stone-950 font-black">
-                    KITCHEN KDS &amp; STOCK ALERT
-                  </span>
-                </p>
-                <p className="text-[10px] text-stone-400 font-mono">chef@amberspice.com</p>
-              </div>
-            </div>
-            <span className="text-[10px] font-semibold text-orange-300/80 group-hover:text-orange-200">
-              Autofill →
-            </span>
-          </button>
-        </div>
       </div>
     </div>
   )

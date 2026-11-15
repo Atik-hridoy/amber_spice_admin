@@ -19,6 +19,7 @@ export function getAdminRefreshToken(): string | null {
 }
 
 export function getStoredAdminUser(): AdminUser | null {
+  if (!getAdminAccessToken() && !getAdminRefreshToken()) return null
   try {
     const value = readValue(USER_KEY)
     return value ? JSON.parse(value) as AdminUser : null

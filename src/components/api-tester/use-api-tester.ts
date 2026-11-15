@@ -28,6 +28,14 @@ export function useApiTester() {
         }
       } catch { /* Retain the user's body while they are typing. */ }
     }
+    if (key === 'dishId' || key === 'deliveryStaffId') {
+      try {
+        const properties = JSON.parse(body)
+        if (key === 'dishId' && Array.isArray(properties.items) && properties.items.length) properties.items[0].dish_id = value ? Number(value) : null
+        if (key === 'deliveryStaffId' && 'delivery_staff_id' in properties) properties.delivery_staff_id = value ? Number(value) : null
+        body = JSON.stringify(properties, null, 2)
+      } catch { /* Keep incomplete user JSON. */ }
+    }
     return { ...previous, body, variables: { ...previous.variables, [key]: value } }
   })
   const select = (preset: ApiPreset) => {
@@ -39,6 +47,12 @@ export function useApiTester() {
       if (previous.variables.categoryId && body) {
         const properties: unknown = JSON.parse(body)
         if (properties && typeof properties === 'object' && !Array.isArray(properties) && 'category' in properties) body = JSON.stringify({ ...properties, category: Number(previous.variables.categoryId) }, null, 2)
+      }
+      if (body && preset.resource === 'order') {
+        const properties = JSON.parse(body)
+        if (Array.isArray(properties.items) && properties.items.length && previous.variables.dishId) properties.items[0].dish_id = Number(previous.variables.dishId)
+        if ('delivery_staff_id' in properties && previous.variables.deliveryStaffId) properties.delivery_staff_id = Number(previous.variables.deliveryStaffId)
+        body = JSON.stringify(properties, null, 2)
       }
       return { ...previous, method: preset.method, url: preset.url, body,
         bodyMode: preset.bodyMode || (body ? 'json' : 'none'), file: null,
@@ -61,6 +75,7 @@ export function useApiTester() {
       const json = result.json
       if (result.status >= 200 && result.status < 300 && json && typeof json === 'object' && !Array.isArray(json)) {
         if ('id' in json && selected.resource && (typeof json.id === 'number' || typeof json.id === 'string')) variable(`${selected.resource}Id`, String(json.id))
+        if ('orderNumber' in json && typeof json.orderNumber === 'string') variable('orderNumber', json.orderNumber)
         if ('access' in json && typeof json.access === 'string') update({ token: json.access, authMode: 'manual' })
       }
     } catch (failure) {

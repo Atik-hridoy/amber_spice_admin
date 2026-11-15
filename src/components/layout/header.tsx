@@ -23,6 +23,7 @@ interface HeaderProps {
   onLogout?: () => void
   alerts?: SystemAlert[]
   onDismissAlert?: (id: string) => void
+  onSettings?: () => void
 }
 
 export function Header({
@@ -34,16 +35,12 @@ export function Header({
   onLogout,
   alerts = [],
   onDismissAlert,
+  onSettings,
 }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
-  const currentRoleDisplay =
-    currentUser?.role === 'super_admin' || currentUser?.role === 'manager'
-      ? '👑 General Manager (Whole Admin)'
-      : currentUser?.role === 'chef'
-      ? '👨‍🍳 Executive Chef (Kitchen)'
-      : '📋 Operations Staff (Dishes & Stock)'
+  const currentRoleDisplay = currentUser?.roleDisplay || currentUser?.role || ''
 
   const unreadAlertsCount = alerts.filter((a) => !a.read).length
 
@@ -64,8 +61,8 @@ export function Header({
         {/* Shift: 10:35 (Figma node #24057:4401) */}
         <div className="flex items-center gap-1.5 text-xs">
           <Clock className="h-3.5 w-3.5 text-[#78716C]" />
-          <span className="font-medium text-[#57534E]">Shift:</span>
-          <span className="font-semibold text-[#1C1917]">10:35</span>
+          <span className="font-medium text-[#57534E]">Today:</span>
+          <span className="font-semibold text-[#1C1917]">{new Date().toLocaleDateString()}</span>
         </div>
 
         {/* Divider | (Figma node #24057:4411) */}
@@ -241,6 +238,7 @@ export function Header({
         <button
           type="button"
           aria-label="Settings"
+          onClick={onSettings}
           title="Kitchen & System Settings"
           className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white text-[#57534E] hover:bg-stone-50 hover:border-[#F15A24] transition cursor-pointer"
         >
