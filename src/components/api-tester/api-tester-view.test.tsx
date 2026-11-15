@@ -9,6 +9,23 @@ const schema = { paths: {} }
 const waitForCollection = () => waitFor(() => expect(screen.queryByText('Loading live API schema…')).toBeNull())
 
 describe('admin API tester', () => {
+  it('captures a saved address ID and reuses it for authenticated edits', async () => {
+    storeAdminSession('tester-access', 'refresh', manager, false)
+    const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve(jsonResponse(url.includes('/api/schema/') ? schema : { id: 53, label: 'home' })))
+    vi.stubGlobal('fetch', fetchMock)
+    render(<ApiTesterView />)
+    await waitForCollection()
+    await userEvent.click(screen.getByRole('button', { name: '2. Save home address' }))
+    fireEvent.change(screen.getByLabelText('Request body'), { target: { value: JSON.stringify({ label: 'home', address_line1: 'Actual Home', postal_code: 'R93 TEST' }) } })
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(screen.getByLabelText('Response body').textContent).toContain('53'))
+    await userEvent.click(screen.getByRole('button', { name: '6. Edit saved address' }))
+    expect((screen.getByLabelText('addressId') as HTMLInputElement).value).toBe('53')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(fetchMock.mock.calls.at(-1)?.[0]).toContain('/profiles/addresses/53/'))
+    expect(fetchMock.mock.calls.at(-1)?.[1].method).toBe('PATCH')
+    expect(fetchMock.mock.calls.at(-1)?.[1].headers.get('Authorization')).toBe('Bearer tester-access')
+  }, 20000)
   it('carries saved order IDs and tracking numbers through the delivery workflow', async () => {
     const user = userEvent.setup()
     storeAdminSession('tester-access', 'refresh', manager, false)

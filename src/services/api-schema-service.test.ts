@@ -3,6 +3,16 @@ import { presetsFromSchema } from './api-schema-service'
 import { API_PRESETS } from '../components/api-tester/api-presets'
 
 describe('live API collection', () => {
+  it('discovers saved address operations with the addressId variable and writable properties', () => {
+    const presets = presetsFromSchema({ paths: {
+      '/api/v1/profiles/addresses/{id}/': { patch: { security: [{ jwtAuth: [] }], requestBody: { content: {
+        'application/json': { schema: { properties: { address_line1: { type: 'string' }, id: { type: 'integer', readOnly: true } } } },
+      } } } },
+    } }, [])
+    expect(presets[0]).toMatchObject({ method: 'PATCH', resource: 'address', fields: ['address_line1'] })
+    expect(presets[0].url).toContain('/profiles/addresses/{addressId}/')
+    expect(presets[0].auth).not.toBe('none')
+  })
   it('discovers new APIs and request properties without code changes and retains menu upload workflows', () => {
     const presets = presetsFromSchema({ paths: {
       '/api/v1/menu/dishes/{id}/': { get: { summary: 'Dish retrieve' } },

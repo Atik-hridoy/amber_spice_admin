@@ -1,4 +1,4 @@
-import type { Order, OrderStatus } from '../types/admin'
+import type { DeliveryActivity, DeliverySummary, Order, OrderStatus } from '../types/admin'
 import { adminRequest } from './api-client'
 import { AdminApiError } from './api-error'
 import { API_ENDPOINTS } from './endpoints/api-endpoints'
@@ -34,6 +34,7 @@ function mapOrderFromApi(raw: Record<string, unknown>): Order {
   const staff = raw.assignedDeliveryStaff as { id: number; name: string; phone?: string } | null | undefined
 
   return {
+    deliveryProgress: (raw.deliveryProgress as DeliverySummary | null | undefined) ?? null,
     id: String(raw.id ?? ''),
     orderNumber: String(raw.orderNumber || `ORD-${raw.id}`),
     customerName: String(raw.customerName || 'Customer'),
@@ -61,7 +62,7 @@ function mapOrderFromApi(raw: Record<string, unknown>): Order {
           id: String(staff.id),
           name: staff.name,
           phone: staff.phone || '',
-          status: 'on-delivery',
+          status: raw.status === 'out_for_delivery' ? 'on-delivery' : 'available',
         }
       : undefined,
   }
@@ -178,8 +179,18 @@ export const orderService = {
     }
   },
 
-  async deliveryStaff(signal?: AbortSignal): Promise<{ id: number; name: string; phone: string }[]> {
+  async deliveryStaff(signal?: AbortSignal): Promise<{ id: number; name: string; phone: string; onDuty?: boolean; activeJobs?: number }[]> {
     return adminRequest('orders/delivery-staff/', { requireAuth: true, signal })
+  },
+
+  deliveryProgress(id: string, signal?: AbortSignal) {
+    return adminRequest<DeliveryActivity | null>(`orders/${id}/delivery/`, { requireAuth: true, signal })
+  },
+  resolveDeliveryIssue(id: string, note: string) {
+    return adminRequest<DeliveryActivity>(`orders/${id}/delivery/resolve-issue/`, { method: 'POST', requireAuth: true, body: JSON.stringify({ note }) })
+  },
+  requestDeliveryReturn(id: string, note: string) {
+    return adminRequest<DeliveryActivity>(`orders/${id}/delivery/request-return/`, { method: 'POST', requireAuth: true, body: JSON.stringify({ note }) })
   },
 
   async collectCash(id: string): Promise<Order> {

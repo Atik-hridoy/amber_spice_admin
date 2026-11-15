@@ -43,6 +43,7 @@ export interface DeliveryDriver {
 }
 
 export interface Order {
+  deliveryProgress?: DeliverySummary | null
   id: string
   orderNumber: string
   customerName: string
@@ -66,6 +67,23 @@ export interface Order {
   notes?: string
   deliveryAddress?: string
   assignedDriver?: DeliveryDriver
+}
+
+export interface DeliverySummary {
+  stage: string
+  hasIssue: boolean
+  acceptedAt: string | null
+  pickedUpAt: string | null
+  arrivedAt: string | null
+  deliveredAt: string | null
+  cashCollectedAt: string | null
+  returnRequestedAt?: string | null
+  returnedAt?: string | null
+}
+
+export interface DeliveryActivity extends DeliverySummary {
+  issue: { code: string; note: string; reportedAt: string } | null
+  events: { id: number; action: string; note: string; actorName: string; amount: string | null; createdAt: string }[]
 }
 
 export interface InventoryItem {

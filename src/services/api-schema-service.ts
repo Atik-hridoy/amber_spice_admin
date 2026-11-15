@@ -56,7 +56,7 @@ export function presetsFromSchema(document: Document, curated: ApiPreset[]): Api
   const discovered: ApiPreset[] = []
   for (const [path, operations] of Object.entries(document.paths)) {
     if (!path.startsWith('/api/v1/')) continue
-    const resource = path.includes('/menu/categories/') ? 'category' : path.includes('/menu/dishes/') ? 'dish' : path.includes('/orders/') ? 'order' : undefined
+    const resource = path.includes('/menu/categories/') ? 'category' : path.includes('/menu/dishes/') ? 'dish' : path.includes('/orders/') || path.includes('/rider/jobs/') ? 'order' : path.includes('/profiles/addresses/') ? 'address' : undefined
     const relative = path.slice('/api/v1/'.length).replace(/\{id\}/g, resource ? `{${resource}Id}` : '{id}').replace('{order_number}', '{orderNumber}')
     for (const [verb, operation] of Object.entries(operations)) {
       const method = verb.toUpperCase() as HttpMethod
