@@ -38,7 +38,7 @@ export function KitchenKdsView({
   inventoryList = [],
 }: KitchenKdsViewProps) {
   const [selectedStation, setSelectedStation] = useState<KitchenStation>('all')
-  const [selectedServiceType, setSelectedServiceType] = useState<'all' | 'delivery' | 'takeaway'>('all')
+  const [selectedServiceType, setSelectedServiceType] = useState<'all' | 'dine-in' | 'delivery' | 'takeaway'>('all')
   const [viewMode, setViewMode] = useState<'table' | 'board'>('table')
   const [stageFilter, setStageFilter] = useState<'all' | 'pending' | 'preparing' | 'ready'>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -182,6 +182,7 @@ export function KitchenKdsView({
             {(
               [
                 { id: 'all', label: 'All' },
+                { id: 'dine-in', label: 'Dine-In' },
                 { id: 'delivery', label: 'Delivery' },
                 { id: 'takeaway', label: 'Pickup' },
               ] as const
@@ -351,11 +352,12 @@ export function KitchenKdsView({
                             </button>
                             <div className="flex items-center gap-1 mt-0.5 text-[11px] text-[#78716C] font-medium">
                               {order.diningType === 'delivery' ? (
-                                <Bike className="h-3.5 w-3.5 text-[#78716C]" />
+                                <><Bike className="h-3.5 w-3.5 text-amber-600" /><span>Delivery</span></>
+                              ) : order.diningType === 'dine-in' ? (
+                                <><TableProperties className="h-3.5 w-3.5 text-blue-600" /><span className="font-semibold text-blue-800">Table {order.tableNumber || 'Dine-In'}</span></>
                               ) : (
-                                <ShoppingBag className="h-3.5 w-3.5 text-[#78716C]" />
+                                <><ShoppingBag className="h-3.5 w-3.5 text-emerald-600" /><span>Takeaway</span></>
                               )}
-                              <span>{order.diningType === 'takeaway' ? 'collection' : order.diningType}</span>
                             </div>
                           </div>
                         </td>
@@ -367,7 +369,7 @@ export function KitchenKdsView({
                               {order.customerName}
                             </span>
                             <span className="text-[11px] font-normal text-[#78716C]">
-                              {order.items.reduce((acc, i) => acc + i.quantity, 0)} items &bull; €{order.totalAmount.toFixed(2)}
+                              {order.items.reduce((acc, i) => acc + i.quantity, 0)} items &bull; {order.diningType === 'dine-in' ? `Table ${order.tableNumber || 'Dine-In'}` : order.diningType}
                             </span>
                           </div>
                         </td>
@@ -536,16 +538,44 @@ export function KitchenKdsView({
                         {order.elapsedMinutes}m ago
                       </span>
                     </div>
-                    <p className="font-semibold text-xs text-stone-800 mt-1">{order.customerName}</p>
+                    <div className="flex items-center justify-between text-[11px] mt-1 text-stone-500">
+                      <span className="font-semibold text-stone-800">{order.customerName}</span>
+                      {order.diningType === 'delivery' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                          <Bike className="h-3 w-3" /> Delivery
+                        </span>
+                      ) : order.diningType === 'dine-in' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                          <TableProperties className="h-3 w-3" /> Table {order.tableNumber || 'Dine-In'}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                          <ShoppingBag className="h-3 w-3" /> Takeaway
+                        </span>
+                      )}
+                    </div>
                     <div className="my-2 border-t border-stone-100 pt-2 space-y-1">
                       {order.items.map((i) => (
-                        <div key={i.id} className="text-xs text-stone-600 flex justify-between">
-                          <span>
-                            <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
-                          </span>
+                        <div key={i.id} className="text-xs text-stone-700">
+                          <div className="flex justify-between">
+                            <span>
+                              <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
+                            </span>
+                            <span className="text-[10px] uppercase font-semibold text-stone-400">{i.station}</span>
+                          </div>
+                          {i.customizations && i.customizations.length > 0 && (
+                            <p className="text-[10px] font-medium text-amber-700 pl-3">
+                              ⚠ {i.customizations.join(', ')}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
+                    {order.notes && (
+                      <p className="mb-2 rounded bg-amber-50 p-1 text-[10px] text-amber-800 border border-amber-200">
+                        <strong>Note:</strong> {order.notes}
+                      </p>
+                    )}
                     <button
                       type="button"
                       disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'preparing')}
@@ -588,16 +618,44 @@ export function KitchenKdsView({
                         {order.elapsedMinutes}m
                       </span>
                     </div>
-                    <p className="font-semibold text-xs text-stone-800 mt-1">{order.customerName}</p>
+                    <div className="flex items-center justify-between text-[11px] mt-1 text-stone-500">
+                      <span className="font-semibold text-stone-800">{order.customerName}</span>
+                      {order.diningType === 'delivery' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                          <Bike className="h-3 w-3" /> Delivery
+                        </span>
+                      ) : order.diningType === 'dine-in' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                          <TableProperties className="h-3 w-3" /> Table {order.tableNumber || 'Dine-In'}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                          <ShoppingBag className="h-3 w-3" /> Takeaway
+                        </span>
+                      )}
+                    </div>
                     <div className="my-2 border-t border-stone-100 pt-2 space-y-1">
                       {order.items.map((i) => (
-                        <div key={i.id} className="text-xs text-stone-600 flex justify-between">
-                          <span>
-                            <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
-                          </span>
+                        <div key={i.id} className="text-xs text-stone-700">
+                          <div className="flex justify-between">
+                            <span>
+                              <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
+                            </span>
+                            <span className="text-[10px] uppercase font-semibold text-stone-400">{i.station}</span>
+                          </div>
+                          {i.customizations && i.customizations.length > 0 && (
+                            <p className="text-[10px] font-medium text-amber-700 pl-3">
+                              ⚠ {i.customizations.join(', ')}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
+                    {order.notes && (
+                      <p className="mb-2 rounded bg-amber-50 p-1 text-[10px] text-amber-800 border border-amber-200">
+                        <strong>Note:</strong> {order.notes}
+                      </p>
+                    )}
                     <button
                       type="button"
                       disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'ready')}
@@ -640,16 +698,44 @@ export function KitchenKdsView({
                         Ready {order.elapsedMinutes}m
                       </span>
                     </div>
-                    <p className="font-semibold text-xs text-stone-800 mt-1">{order.customerName}</p>
+                    <div className="flex items-center justify-between text-[11px] mt-1 text-stone-500">
+                      <span className="font-semibold text-stone-800">{order.customerName}</span>
+                      {order.diningType === 'delivery' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                          <Bike className="h-3 w-3" /> Delivery
+                        </span>
+                      ) : order.diningType === 'dine-in' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                          <TableProperties className="h-3 w-3" /> Table {order.tableNumber || 'Dine-In'}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                          <ShoppingBag className="h-3 w-3" /> Takeaway
+                        </span>
+                      )}
+                    </div>
                     <div className="my-2 border-t border-stone-100 pt-2 space-y-1">
                       {order.items.map((i) => (
-                        <div key={i.id} className="text-xs text-stone-600 flex justify-between">
-                          <span>
-                            <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
-                          </span>
+                        <div key={i.id} className="text-xs text-stone-700">
+                          <div className="flex justify-between">
+                            <span>
+                              <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
+                            </span>
+                            <span className="text-[10px] uppercase font-semibold text-stone-400">{i.station}</span>
+                          </div>
+                          {i.customizations && i.customizations.length > 0 && (
+                            <p className="text-[10px] font-medium text-amber-700 pl-3">
+                              ⚠ {i.customizations.join(', ')}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
+                    {order.notes && (
+                      <p className="mb-2 rounded bg-amber-50 p-1 text-[10px] text-amber-800 border border-amber-200">
+                        <strong>Note:</strong> {order.notes}
+                      </p>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
