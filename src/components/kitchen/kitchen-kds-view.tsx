@@ -8,6 +8,7 @@ import {
   Eye,
   Flame,
   LayoutGrid,
+  PackageCheck,
   Printer,
   Search,
   ShoppingBag,
@@ -42,6 +43,7 @@ export function KitchenKdsView({
   const [stageFilter, setStageFilter] = useState<'all' | 'pending' | 'preparing' | 'ready'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<Order | null>(null)
+  const [selectedModalTab, setSelectedModalTab] = useState<'details' | 'slip' | 'handover'>('details')
 
   // Stock alert modal state (Chef alerts Manager & Staff)
   const [isStockAlertModalOpen, setIsStockAlertModalOpen] = useState(false)
@@ -449,11 +451,18 @@ export function KitchenKdsView({
                             {isReady && (
                               <button
                                 type="button"
-                                disabled title="Handover is managed in Orders"
-                                className="inline-flex items-center gap-1 rounded-lg bg-[#1C1917] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:bg-[#292524] active:scale-95 transition cursor-pointer"
+                                onClick={() => {
+                                  if (order.diningType === 'delivery') {
+                                    setSelectedModalTab('handover')
+                                    setSelectedOrderForModal(order)
+                                  } else {
+                                    void onUpdateOrderStatus(order.id, 'delivered')
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1 rounded-lg bg-[#B84A22] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:bg-[#a03e1b] active:scale-95 transition cursor-pointer"
                               >
-                                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                                <span>Awaiting handover</span>
+                                <PackageCheck className="h-3.5 w-3.5" />
+                                <span>{order.diningType === 'delivery' ? 'Bags & Handover' : 'Confirm Handover'}</span>
                               </button>
                             )}
 
@@ -461,8 +470,11 @@ export function KitchenKdsView({
                             {(isInProgress || isReady) && (
                               <button
                                 type="button"
-                                onClick={() => setSelectedOrderForModal(order)}
-                                title="Print Kitchen Docket"
+                                onClick={() => {
+                                  setSelectedModalTab(isReady && order.diningType === 'delivery' ? 'handover' : 'slip')
+                                  setSelectedOrderForModal(order)
+                                }}
+                                title={isReady && order.diningType === 'delivery' ? 'Bag Tickets' : 'Print Kitchen Docket'}
                                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white text-stone-600 hover:border-[#F15A24] hover:text-[#F15A24] transition cursor-pointer"
                               >
                                 <Printer className="h-3.5 w-3.5" />
@@ -472,7 +484,10 @@ export function KitchenKdsView({
                             {/* View Detail Button */}
                             <button
                               type="button"
-                              onClick={() => setSelectedOrderForModal(order)}
+                              onClick={() => {
+                                setSelectedModalTab('details')
+                                setSelectedOrderForModal(order)
+                              }}
                               title="View Ticket Details"
                               className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white text-stone-600 hover:border-[#F15A24] hover:text-[#F15A24] transition cursor-pointer"
                             >
@@ -637,10 +652,18 @@ export function KitchenKdsView({
                     </div>
                     <button
                       type="button"
-                      disabled title="Handover is managed in Orders"
-                      className="w-full rounded-lg bg-[#1C1917] py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#292524] active:scale-98 transition cursor-pointer"
+                      onClick={() => {
+                        if (order.diningType === 'delivery') {
+                          setSelectedModalTab('handover')
+                          setSelectedOrderForModal(order)
+                        } else {
+                          void onUpdateOrderStatus(order.id, 'delivered')
+                        }
+                      }}
+                      className="w-full rounded-lg bg-[#B84A22] py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#a03e1b] active:scale-98 transition cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      Awaiting operations handover
+                      <PackageCheck className="h-3.5 w-3.5" />
+                      <span>{order.diningType === 'delivery' ? 'Bags & Handover' : 'Confirm Handover'}</span>
                     </button>
                   </div>
                 ))}
@@ -652,8 +675,9 @@ export function KitchenKdsView({
       {/* Order Details / Thermal Slip Modal (Figma node #24057:12413) */}
       <OrderDetailsModal
         order={orders.find(order => order.id === selectedOrderForModal?.id) || null}
+        initialTab={selectedModalTab}
         onClose={() => setSelectedOrderForModal(null)}
-
+        onUpdateStatus={onUpdateOrderStatus}
       />
 
       {/* 4. Chef Stock-Running-Low Alert Modal */}

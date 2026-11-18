@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AlertCircle,
   MapPin,
@@ -13,16 +13,22 @@ import type { Order, OrderStatus } from '../../types/admin'
 
 interface OrderDetailsModalProps {
   order: Order | null
+  initialTab?: 'details' | 'slip' | 'handover'
   onClose: () => void
   onUpdateStatus?: (orderId: string, newStatus: OrderStatus) => void
 }
 
 export function OrderDetailsModal({
   order,
+  initialTab = 'details',
   onClose,
   onUpdateStatus,
 }: OrderDetailsModalProps) {
-  const [activeTab, setActiveTab] = useState<'details' | 'slip' | 'handover'>('details')
+  const [activeTab, setActiveTab] = useState<'details' | 'slip' | 'handover'>(initialTab)
+
+  useEffect(() => {
+    setActiveTab(initialTab)
+  }, [initialTab, order?.id])
   if (!order) return null
 
   const handlePrint = () => window.print()

@@ -18,6 +18,7 @@ export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef, curre
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedTab, setSelectedTab] = useState<'details' | 'handover'>('details')
   const [drivers, setDrivers] = useState<{ id: number; name: string; phone: string; onDuty?: boolean; activeJobs?: number }[]>([])
   const [driversLoading, setDriversLoading] = useState(false)
   const [driversError, setDriversError] = useState('')
@@ -80,16 +81,16 @@ export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef, curre
       {order.diningType === 'delivery' && <p className="text-sm">Courier: {order.assignedDriver?.name || 'Not assigned'}</p>}
       {order.diningType === 'delivery' && currentUser.permissions.includes('orders:view') && <DeliveryActivityPanel orderId={order.id} progress={order.deliveryProgress} canResolve={canManage} onReload={onReload} />}
       <fieldset disabled={busy || actionBusy} className="flex flex-wrap items-center gap-3 text-sm disabled:opacity-50">
-        <button className="underline" onClick={() => setSelectedId(order.id)}>Details</button>
+        <button className="underline" onClick={() => { setSelectedTab('details'); setSelectedId(order.id) }}>Details</button>
         {canManage && order.diningType === 'delivery' && ['pending', 'preparing', 'ready'].includes(order.status) && <label>Assign courier <select aria-label={`Courier for ${order.orderNumber}`} className="rounded-lg border p-2" disabled={driversLoading || Boolean(driversError)} value={order.assignedDriver?.id || ''} onChange={e => { if (e.target.value) void action(() => orderService.assignDelivery(order.id, e.target.value)) }}><option value="">{drivers.length ? 'Select delivery staff' : 'No active delivery staff'}</option>{drivers.map(driver => <option key={driver.id} value={driver.id}>{driver.name} · {driver.onDuty === undefined ? 'Duty unknown' : driver.onDuty ? 'On duty' : 'Off duty'}{driver.activeJobs !== undefined ? ` · ${driver.activeJobs} active` : ''}</option>)}</select></label>}
         {canManage && order.status === 'pending' && <button className="rounded-lg bg-orange-600 p-2 text-white" onClick={async () => { if (await onUpdateOrderStatus(order.id, 'preparing')) onForwardToChef?.(order) }}>Forward to Kitchen</button>}
         {canManage && order.status === 'preparing' && <button className="rounded-lg bg-emerald-700 p-2 text-white" onClick={() => void onUpdateOrderStatus(order.id, 'ready')}>Mark Ready</button>}
-        {(canManage || canDeliver) && order.status === 'ready' && <button className="rounded-lg bg-stone-800 p-2 text-white" onClick={() => order.diningType === 'delivery' ? setSelectedId(order.id) : void onUpdateOrderStatus(order.id, 'delivered')}>{order.diningType === 'delivery' ? 'Kitchen handover & bag ticket' : 'Confirm Handover'}</button>}
+        {(canManage || canDeliver) && order.status === 'ready' && <button className="rounded-lg bg-stone-800 p-2 text-white" onClick={() => { if (order.diningType === 'delivery') { setSelectedTab('handover'); setSelectedId(order.id) } else { void onUpdateOrderStatus(order.id, 'delivered') } }}>{order.diningType === 'delivery' ? 'Kitchen handover & bag ticket' : 'Confirm Handover'}</button>}
         {order.status === 'out-for-delivery' && <p className="text-xs text-stone-500">Rider must verify the bag ticket at the doorstep to complete delivery.</p>}
         {(canManage || canDeliver) && order.status === 'delivered' && order.paymentMethod === 'cash' && order.paymentStatus === 'pending' && <button className="rounded-lg border p-2" onClick={() => void action(() => orderService.collectCash(order.id))}>Confirm Cash Collected</button>}
         {canCancel && ['pending', 'preparing', 'ready'].includes(order.status) && <button className="text-red-700 underline" onClick={() => void onUpdateOrderStatus(order.id, 'cancelled')}>Cancel Order</button>}
       </fieldset>
     </article>)}
-    <OrderDetailsModal order={orders.find(order => order.id === selectedId) || null} onClose={() => setSelectedId(null)} />
+    <OrderDetailsModal order={orders.find(order => order.id === selectedId) || null} initialTab={selectedTab} onClose={() => setSelectedId(null)} />
   </div>
 }
