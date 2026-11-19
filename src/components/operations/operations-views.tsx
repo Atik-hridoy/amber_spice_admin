@@ -41,8 +41,19 @@ export function PromotionsLiveView() {
 }
 
 export function ContentManagementView() {
-  const [tab, setTab] = useState('Restaurant')
-  return <div className="space-y-5"><div className="flex flex-wrap gap-2">{['Restaurant', 'FAQ', 'Gallery', 'Reviews', 'Messages', 'Subscribers', 'Stock alerts', 'Wastage'].map(name => <button className={`rounded-xl border px-3 py-2 text-sm ${tab === name ? 'bg-stone-900 text-white' : 'bg-white'}`} key={name} onClick={() => setTab(name)}>{name}</button>)}</div>
+  const [tab, setTab] = useState('Hero Banners')
+  return <div className="space-y-5"><div className="flex flex-wrap gap-2">{['Hero Banners', 'Restaurant', 'FAQ', 'Gallery', 'Reviews', 'Messages', 'Subscribers', 'Stock alerts', 'Wastage'].map(name => <button className={`rounded-xl border px-3 py-2 text-sm ${tab === name ? 'bg-stone-900 text-white' : 'bg-white'}`} key={name} onClick={() => setTab(name)}>{name}</button>)}</div>
+    {tab === 'Hero Banners' && <ResourcePanel title="Hero Banners" endpoint="content/banners/" canCreate canDelete fields={fields([
+      ['displayOrder', 'Sort Order (e.g. 1, 2, 3)', 'number', true],
+      ['tag', 'Badge / Highlight Tag (e.g. WEEKEND SPECIAL)', 'text', true],
+      ['titleLine1', 'Title Line 1', 'text', true],
+      ['titleLine2', 'Title Line 2 (Highlighted)', 'text'],
+      ['subtitle', 'Subtitle / Description', 'textarea'],
+      ['ctaText', 'Button Text (e.g. Book a Table)', 'text', true],
+      ['ctaLink', 'Button Action', 'select', true, ['reservation', 'menu', 'offers', 'about', 'contact', 'order']],
+      ['imageUrl', 'Image URL / Asset Path', 'text', true],
+      ['isActive', 'Active & Visible', 'checkbox'],
+    ])} columns={columns([['displayOrder', 'Order'], ['tag', 'Badge'], ['titleLine1', 'Title 1'], ['titleLine2', 'Title 2'], ['ctaText', 'Button'], ['ctaLink', 'Action'], ['imageUrl', 'Image'], ['isActive', 'Active']])} />}
     {tab === 'Restaurant' && <ResourcePanel title="Restaurant profile" endpoint="content/restaurant/" canCreate singleton fields={fields([
       ['name', 'Restaurant name', 'text', true], ['story', 'About the restaurant', 'textarea'], ['phone', 'Contact phone'], ['email', 'Contact email', 'email'], ['address', 'Street address'], ['city', 'City'], ['opening_hours', 'Opening hours', 'textarea'], ['latitude', 'Map latitude', 'number'], ['longitude', 'Map longitude', 'number'], ['delivery_postcode_prefixes', 'Delivery postcode prefixes (comma separated)'], ['delivery_fee', 'Delivery fee', 'number', true], ['free_delivery_threshold', 'Free delivery food subtotal threshold', 'number', true], ['included_vat_percent', 'Included VAT percent', 'number', true], ['ordering_enabled', 'Accepting orders', 'checkbox'],
     ])} columns={columns([['name', 'Name'], ['phone', 'Phone'], ['address', 'Address'], ['delivery_fee', 'Delivery fee'], ['ordering_enabled', 'Accepting orders']])} />}
