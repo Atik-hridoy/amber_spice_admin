@@ -2,6 +2,7 @@ import {
   ArrowUpRight,
   CreditCard,
   DollarSign,
+  Download,
   Flame,
   ShoppingBag,
   Sparkles,
@@ -25,6 +26,28 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
   ]
 
   const maxRevenue = Math.max(...weeklyData.map((d) => d.revenue))
+
+  const handleExportCSV = () => {
+    const headers = ['Day', 'Orders', 'Revenue (€)', 'Estimated Margin (€)']
+    const rows = weeklyData.map((d) => [
+      d.day,
+      d.orders,
+      d.revenue.toFixed(2),
+      (d.revenue * 0.72).toFixed(2),
+    ])
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement('a')
+    link.setAttribute('href', encodedUri)
+    link.setAttribute('download', `Amber_Spice_Sales_Report_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   return (
     <div className="space-y-6">
@@ -114,9 +137,20 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
               </h3>
               <p className="text-xs text-stone-500">Gross sales across dining & delivery</p>
             </div>
-            <span className="rounded-lg bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700">
-              This Week
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-lg bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700">
+                This Week
+              </span>
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer"
+                title="Download weekly sales spreadsheet"
+              >
+                <Download className="h-3 w-3 text-stone-500" />
+                <span>Export CSV</span>
+              </button>
+            </div>
           </div>
 
           {/* Bar Chart Container */}

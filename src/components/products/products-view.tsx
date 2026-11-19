@@ -1,151 +1,248 @@
 import { useState } from 'react'
-import {
-  Flame,
-  Plus,
-  Search,
-  Star,
-  ToggleLeft,
-  ToggleRight,
-} from 'lucide-react'
-import type { MenuItem } from '../../types/admin'
+import { CheckCircle2, FolderPlus, Pencil, Plus, Search, X } from 'lucide-react'
+import type { AdminUser } from '../../types/admin'
+import type { DishPayload, MenuDish } from '../../types/menu-dish'
+import { useMenuDishes } from '../../hooks/use-menu-dishes'
+import type { CreateCategoryPayload, MenuCategory } from '../../types/menu-category'
+import { getAdminAccessToken, getAdminRefreshToken } from '../../services/admin-session'
+import { useMenuCategories } from '../../hooks/use-menu-categories'
+import { CategoryFormModal } from './category-form-modal'
+import { CategoryTabs } from './category-tabs'
+import { DishFormModal } from './dish-form-modal'
+import { ProductCard } from './product-card'
 
 interface ProductsViewProps {
-  items: MenuItem[]
-  onToggleAvailability: (itemId: string) => void
+  currentUser: AdminUser
 }
 
-export function ProductsView({ items, onToggleAvailability }: ProductsViewProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+export function ProductsView({ currentUser }: ProductsViewProps) {
+  const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<MenuCategory | undefined>()
+  const [isDishModalOpen, setIsDishModalOpen] = useState(false)
+  const [editingDish, setEditingDish] = useState<MenuDish | undefined>()
+  const [successMessage, setSuccessMessage] = useState('')
+  const [actionError, setActionError] = useState('')
+  const dishData = useMenuDishes()
+  const { categories, isLoading, isSaving, loadError, reload, createCategory, updateCategory } = useMenuCategories()
+  const hasSession = !!(getAdminAccessToken() || getAdminRefreshToken())
+  const canManage = ['super_admin', 'admin', 'manager'].includes(currentUser.role) || currentUser.permissions.includes('menu:manage')
+  const canCreateCategory = canManage && hasSession
+  const hasActiveCategories = categories.some((category) => category.is_active)
+  const selectedCategoryObj = categories.find((c) => String(c.id) === selectedCategory)
 
-  const categories = ['all', 'Biryani', 'Curries', 'Tandoor & Grills', 'Breads', 'Desserts']
+  const filteredItems = dishData.dishes.filter((item) => (
+    (selectedCategory === 'all' || String(item.category) === selectedCategory) &&
+    (!searchQuery.trim() || `${item.name} ${item.description}`.toLowerCase().includes(searchQuery.toLowerCase().trim()))
+  ))
 
-  const filteredItems = items.filter((item) => {
-    const matchesCat = selectedCategory === 'all' || item.category === selectedCategory
-    const matchesSearch =
-      !searchQuery.trim() ||
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const openCategoryCreate = () => {
+    setEditingCategory(undefined)
+    setIsCategoryModalOpen(true)
+  }
 
-    return matchesCat && matchesSearch
-  })
+  const openCategoryEdit = (category: MenuCategory) => {
+    setEditingCategory(category)
+    setIsCategoryModalOpen(true)
+  }
+
+  const saveCategory = async (payload: CreateCategoryPayload) => {
+    let saved: MenuCategory
+    if (editingCategory) {
+      saved = await updateCategory(editingCategory.id, payload)
+      setSuccessMessage(`Category “${saved.name}” updated successfully${saved.is_active ? '.' : ' as hidden.'}`)
+    } else {
+      saved = await createCategory(payload)
+      setSuccessMessage(`Category “${saved.name}” saved successfully${saved.is_active ? '.' : ' as hidden.'}`)
+    }
+    setIsCategoryModalOpen(false)
+    setEditingCategory(undefined)
+    setSelectedCategory(String(saved.id))
+    void reload()
+    return saved
+  }
+
+  const openDish = (dish?: MenuDish) => {
+    setEditingDish(dish)
+    setIsDishModalOpen(true)
+  }
+
+  const saveDish = async (payload: DishPayload) => {
+    const saved = await dishData.save(payload, editingDish?.id)
+    setIsDishModalOpen(false)
+    setSelectedCategory(String(saved.category))
+    setSuccessMessage(`Dish “${saved.name}” saved successfully.`)
+    void reload()
+    return saved
+  }
+
+  const toggleDish = async (dish: MenuDish) => {
+    setActionError('')
+    try {
+      await dishData.toggle(dish)
+      void reload()
+    } catch (failure) {
+      setActionError(failure instanceof Error ? failure.message : 'Could not update availability.')
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Controls Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-2xs">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
-            type="text"
+            aria-label="Search menu dishes"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search menu dishes..."
-            className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] py-2 pl-10 pr-4 text-xs text-stone-900 placeholder:text-stone-400 focus:border-[#B84A22] focus:bg-white focus:outline-none"
+            className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] py-2.5 pl-10 pr-4 text-xs outline-none focus:border-[#B84A22] focus:ring-2 focus:ring-[#B84A22]/15"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {selectedCategoryObj && canCreateCategory && (
+            <button
+              type="button"
+              onClick={() => openCategoryEdit(selectedCategoryObj)}
+              title={`Edit category ${selectedCategoryObj.name}`}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-stone-700 transition-colors hover:border-[#B84A22] hover:text-[#B84A22] cursor-pointer shadow-2xs"
+            >
+              <Pencil size={14} className="text-[#B84A22]" />
+              <span>Edit “{selectedCategoryObj.name}”</span>
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={() => alert('New dish creation form opened!')}
-            className="flex items-center gap-1.5 rounded-xl bg-[#B84A22] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#9E3E1C] transition cursor-pointer"
+            onClick={openCategoryCreate}
+            disabled={!canCreateCategory}
+            title={!hasSession ? 'Sign in online to add categories' : !canManage ? 'Menu management permission required' : undefined}
+            className="inline-flex items-center gap-2 rounded-xl border border-[#B84A22]/30 bg-[#FFF7ED] px-4 py-2.5 text-xs font-semibold text-[#B84A22] transition-colors hover:bg-[#B84A22]/10 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
-            <Plus className="h-4 w-4" />
+            <FolderPlus size={16} />
+            <span>Add Category</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openDish()}
+            disabled={!canCreateCategory || isLoading || !hasActiveCategories || dishData.isBusy}
+            title={!hasActiveCategories ? 'Create an active category first' : undefined}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#B84A22] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#9E3E1C] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+          >
+            <Plus size={16} />
             <span>Add New Dish</span>
           </button>
         </div>
       </div>
 
-      {/* Category Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-        {categories.map((cat) => (
+      {!hasSession && (
+        <p className="text-xs text-stone-500">
+          Sign in with an online restaurant account to manage categories and dishes.
+        </p>
+      )}
+
+      {successMessage && (
+        <div role="status" className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <span className="flex items-center gap-2">
+            <CheckCircle2 size={17} />
+            {successMessage}
+          </span>
           <button
-            key={cat}
             type="button"
-            onClick={() => setSelectedCategory(cat)}
-            className={`rounded-xl px-4 py-2 text-xs font-semibold shrink-0 transition cursor-pointer ${
-              selectedCategory === cat
-                ? 'bg-stone-900 text-white shadow-xs'
-                : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
-            }`}
+            aria-label="Dismiss category confirmation"
+            onClick={() => setSuccessMessage('')}
+            className="rounded p-1 hover:bg-emerald-100 cursor-pointer"
           >
-            {cat === 'all' ? 'All Dishes' : cat}
+            <X size={15} />
           </button>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Dishes Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredItems.map((dish) => (
-          <div
-            key={dish.id}
-            className="flex flex-col justify-between rounded-2xl border border-stone-200/80 bg-white p-4 shadow-2xs hover:border-[#B84A22]/40 transition overflow-hidden"
-          >
-            <div>
-              <div className="relative overflow-hidden rounded-xl bg-stone-100 h-40">
-                <img
-                  src={dish.imageUrl}
-                  alt={dish.name}
-                  className="h-full w-full object-cover"
-                />
-                <span className="absolute top-2.5 right-2.5 rounded-lg bg-stone-900/80 backdrop-blur-xs px-2 py-0.5 text-[10px] font-bold text-white">
-                  {dish.category}
-                </span>
-                {dish.spicyLevel && (
-                  <span className="absolute top-2.5 left-2.5 flex items-center gap-0.5 rounded-lg bg-red-600/90 backdrop-blur-xs px-2 py-0.5 text-[10px] font-bold text-white">
-                    <Flame className="h-3 w-3" />
-                    <span>Spice {dish.spicyLevel}</span>
-                  </span>
-                )}
-              </div>
+      <CategoryTabs
+        categories={categories}
+        selected={selectedCategory}
+        isLoading={isLoading}
+        error={loadError}
+        onSelect={setSelectedCategory}
+        onReload={() => void reload()}
+        onEditCategory={openCategoryEdit}
+        canManage={canCreateCategory}
+      />
 
-              <div className="mt-3">
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="font-serif text-sm font-bold text-stone-900 line-clamp-1">
-                    {dish.name}
-                  </h4>
-                  <span className="font-mono text-sm font-bold text-[#B84A22]">
-                    €{dish.price.toFixed(2)}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-stone-500 line-clamp-2">
-                  {dish.description}
-                </p>
-              </div>
+      {actionError && (
+        <div role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">
+          {actionError}
+        </div>
+      )}
 
-              <div className="mt-3 flex items-center gap-3 text-xs text-stone-500">
-                <div className="flex items-center gap-1 text-amber-500 font-bold">
-                  <Star className="h-3.5 w-3.5 fill-current" />
-                  <span>{dish.rating}</span>
-                </div>
-                <span>&bull;</span>
-                <span>{dish.ordersCount} Total Orders</span>
-              </div>
-            </div>
+      {dishData.error && (
+        <div role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">
+          {dishData.error}
+          <button type="button" onClick={() => void dishData.reload()} className="ml-3 font-semibold underline cursor-pointer">
+            Retry dishes
+          </button>
+        </div>
+      )}
 
-            {/* Availability Toggle */}
-            <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
-              <span className="text-xs font-semibold text-stone-700">
-                {dish.isAvailable ? 'In Stock (Live)' : 'Sold Out / Disabled'}
-              </span>
+      <button
+        type="button"
+        onClick={() => void dishData.reload()}
+        disabled={dishData.isLoading || dishData.isBusy}
+        className="text-xs font-semibold text-[#B84A22] cursor-pointer"
+      >
+        Refresh dishes
+      </button>
 
-              <button
-                type="button"
-                onClick={() => onToggleAvailability(dish.id)}
-                className="cursor-pointer"
-                title="Toggle Dish Availability"
-              >
-                {dish.isAvailable ? (
-                  <ToggleRight className="h-7 w-7 text-emerald-600" />
-                ) : (
-                  <ToggleLeft className="h-7 w-7 text-stone-400" />
-                )}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      {dishData.isLoading ? (
+        <p role="status" className="text-sm text-stone-500">Loading dishes…</p>
+      ) : dishData.error ? null : filteredItems.length ? (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredItems.map((dish) => (
+            <ProductCard
+              key={dish.id}
+              dish={dish}
+              onEdit={openDish}
+              onToggleAvailability={() => void toggleDish(dish)}
+              canManage={canCreateCategory}
+              canToggle={hasSession && (canManage || currentUser.permissions.includes('menu:toggle_availability'))}
+              busy={dishData.isBusy}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-12 text-center">
+          <h3 className="text-sm font-semibold text-stone-800">No dishes found</h3>
+          <p className="mt-2 text-xs text-stone-500">
+            {searchQuery ? 'Try a different search or category.' : 'Add a dish to start building this category.'}
+          </p>
+        </div>
+      )}
+
+      {isCategoryModalOpen && (
+        <CategoryFormModal
+          category={editingCategory}
+          isSaving={isSaving}
+          onClose={() => {
+            setIsCategoryModalOpen(false)
+            setEditingCategory(undefined)
+          }}
+          onSubmit={saveCategory}
+        />
+      )}
+
+      {isDishModalOpen && (
+        <DishFormModal
+          dish={editingDish}
+          categories={categories}
+          isSaving={dishData.isBusy}
+          initialCategory={categories.some((category) => String(category.id) === selectedCategory && category.is_active) ? selectedCategory : undefined}
+          onClose={() => setIsDishModalOpen(false)}
+          onSave={saveDish}
+        />
+      )}
     </div>
   )
 }

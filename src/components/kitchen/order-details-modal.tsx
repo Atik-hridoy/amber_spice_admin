@@ -1,8 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AlertCircle,
-  Check,
-  Clock,
   MapPin,
   Phone,
   Printer,
@@ -10,33 +8,30 @@ import {
   User,
   X,
 } from 'lucide-react'
-import type { Order } from '../../types/admin'
+import { KitchenHandoverPanel } from './kitchen-handover-panel'
+import type { Order, OrderStatus } from '../../types/admin'
 
 interface OrderDetailsModalProps {
   order: Order | null
+  initialTab?: 'details' | 'slip' | 'handover'
   onClose: () => void
-  onUpdateStatus?: (orderId: string, newStatus: any) => void
+  onUpdateStatus?: (orderId: string, newStatus: OrderStatus) => void
 }
 
 export function OrderDetailsModal({
   order,
+  initialTab = 'details',
   onClose,
   onUpdateStatus,
 }: OrderDetailsModalProps) {
-  const [activeTab, setActiveTab] = useState<'details' | 'slip'>('details')
-  const [isPrinting, setIsPrinting] = useState(false)
-  const [printSuccess, setPrintSuccess] = useState(false)
+  const [activeTab, setActiveTab] = useState<'details' | 'slip' | 'handover'>(initialTab)
 
+  useEffect(() => {
+    setActiveTab(initialTab)
+  }, [initialTab, order?.id])
   if (!order) return null
 
-  const handlePrint = () => {
-    setIsPrinting(true)
-    setTimeout(() => {
-      setIsPrinting(false)
-      setPrintSuccess(true)
-      setTimeout(() => setPrintSuccess(false), 2500)
-    }, 600)
-  }
+  const handlePrint = () => window.print()
 
   const paymentLabel = order.paymentMethod
     ? order.paymentMethod.replace('-', '_').toUpperCase()
@@ -77,11 +72,7 @@ export function OrderDetailsModal({
                   : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
               }`}
             >
-              {order.status === 'pending'
-                ? 'Incoming'
-                : order.status === 'preparing'
-                ? 'In Progress'
-                : 'Ready'}
+              {order.status.replaceAll('-', ' ')}
             </span>
           </div>
 
@@ -97,7 +88,7 @@ export function OrderDetailsModal({
 
         {/* Scrollable Body Content (Figma node #24057:12423) */}
         <div className="overflow-y-auto p-5 space-y-4 flex-1">
-          {activeTab === 'details' ? (
+          {activeTab === 'handover' ? <KitchenHandoverPanel key={order.id} orderId={order.id} /> : activeTab === 'details' ? (
             <>
               {/* Summary Information Card (Figma node #24057:12425) */}
               <div className="rounded-xl border border-[#E7E5E4]/80 bg-[#FAFAF9] p-3 space-y-2">
@@ -114,11 +105,11 @@ export function OrderDetailsModal({
                 <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[#E7E5E4]/60">
                   <span className="text-[#78716C] font-normal">Contact:</span>
                   <a
-                    href={`tel:${order.customerPhone ?? '+353871234567'}`}
+                    href={`tel:${order.customerPhone || ''}`}
                     className="flex items-center gap-1 font-semibold text-[#F15A24] hover:underline"
                   >
                     <Phone className="h-3 w-3" />
-                    <span>{order.customerPhone ?? '+353 87 123 4567'}</span>
+                    <span>{order.customerPhone || 'Not provided'}</span>
                   </a>
                 </div>
 
@@ -139,9 +130,8 @@ export function OrderDetailsModal({
                     <MapPin className="h-3 w-3 text-[#78716C] shrink-0" />
                     <span>
                       {order.diningType === 'dine-in'
-                        ? order.tableNumber ?? 'Table 5'
-                        : order.deliveryAddress ??
-                          '12 Fitzwilliam Square, Dublin 2 (D02 X381)'}
+                        ? order.tableNumber || 'Not provided'
+                        : order.deliveryAddress || (order.diningType === 'takeaway' ? 'Restaurant collection' : 'Not provided')}
                     </span>
                   </div>
                 </div>
@@ -155,14 +145,7 @@ export function OrderDetailsModal({
                     {order.notes}
                   </p>
                 </div>
-              ) : (
-                <div className="rounded-lg border border-[#FDE68A]/80 bg-[#FFFBEB] p-2.5 flex items-start gap-2">
-                  <AlertCircle className="h-3.5 w-3.5 text-[#B45309] shrink-0 mt-0.5" />
-                  <p className="text-xs text-[#78350F] leading-[19.5px]">
-                    Ring Apt 3 buzzer, leave at reception
-                  </p>
-                </div>
-              )}
+              ) : null}
 
               {/* Items Breakdown (Figma node #24057:12472) */}
               <div className="space-y-2">
@@ -191,12 +174,7 @@ export function OrderDetailsModal({
                           <span>⚠</span>
                           <span>{item.customizations.join(', ')}</span>
                         </div>
-                      ) : (
-                        <div className="pl-4 text-[11px] font-medium text-[#B45309] flex items-center gap-1">
-                          <span>⚠</span>
-                          <span>Medium spice, gravy on side</span>
-                        </div>
-                      )}
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -205,7 +183,7 @@ export function OrderDetailsModal({
               {/* Total Paid Row (Figma node #24057:12487) */}
               <div className="pt-2 border-t border-[#E7E5E4] flex items-center justify-between">
                 <span className="font-bold text-sm text-[#1C1917]">
-                  Total Paid ({paymentLabel})
+                  Total · {order.paymentStatus} ({paymentLabel})
                 </span>
                 <span className="font-bold text-sm text-[#F15A24]">
                   €{order.totalAmount.toFixed(2)}
@@ -218,7 +196,6 @@ export function OrderDetailsModal({
               <div className="text-center space-y-1 border-b border-dashed border-stone-400 pb-3">
                 <p className="font-bold text-sm tracking-wider uppercase">AMBER SPICE</p>
                 <p className="text-[11px] text-stone-600">Royal Indian Cuisine Dublin</p>
-                <p className="text-[10px] text-stone-500">VAT Reg: IE9823419H &bull; Tel: +353 1 234 5678</p>
               </div>
 
               <div className="text-[11px] space-y-1 border-b border-dashed border-stone-400 pb-2">
@@ -266,12 +243,13 @@ export function OrderDetailsModal({
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span>SUBTOTAL:</span>
-                  <span>€{(order.totalAmount - (order.diningType === 'delivery' ? 2 : 0)).toFixed(2)}</span>
+                  <span>€{order.subtotal.toFixed(2)}</span>
                 </div>
+                {order.discountAmount > 0 && <div className="flex justify-between"><span>VOUCHER ({order.couponCode}):</span><span>−€{order.discountAmount.toFixed(2)}</span></div>}
                 {order.diningType === 'delivery' && (
                   <div className="flex justify-between text-stone-600">
                     <span>DELIVERY:</span>
-                    <span>€2.00</span>
+                    <span>€{order.deliveryFee.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-sm pt-1 border-t border-stone-300">
@@ -279,7 +257,7 @@ export function OrderDetailsModal({
                   <span>€{order.totalAmount.toFixed(2)}</span>
                 </div>
                 <p className="text-[10px] text-stone-500 text-center pt-1">
-                  PAID VIA {paymentLabel} (APPROVED)
+                  {paymentLabel} · {order.paymentStatus.toUpperCase()}
                 </p>
               </div>
 
@@ -325,6 +303,7 @@ export function OrderDetailsModal({
             </button>
           </div>
 
+          {order.diningType === 'delivery' && <button type="button" onClick={() => setActiveTab('handover')} className={`rounded-lg px-3 py-2 text-xs font-semibold ${activeTab === 'handover' ? 'bg-[#B84A22] text-white' : 'border border-orange-200 text-[#B84A22]'}`}>Bags & rider</button>}
           {/* Quick Actions & Print */}
           <div className="flex items-center gap-2">
             {onUpdateStatus && order.status === 'pending' && (
@@ -353,7 +332,7 @@ export function OrderDetailsModal({
               </button>
             )}
 
-            {onUpdateStatus && order.status === 'ready' && (
+            {onUpdateStatus && order.diningType !== 'delivery' && order.status === 'ready' && (
               <button
                 type="button"
                 onClick={() => {
@@ -369,26 +348,11 @@ export function OrderDetailsModal({
             {/* Print Button (Figma node #24057:12503) */}
             <button
               type="button"
-              onClick={handlePrint}
-              disabled={isPrinting}
+              onClick={order.diningType === 'delivery' ? () => setActiveTab('handover') : handlePrint}
               className="flex h-8 items-center gap-1.5 rounded-lg border border-[#E7E5E4] bg-white px-2.5 text-xs font-medium text-[#292524] shadow-2xs hover:border-[#F15A24] hover:text-[#F15A24] transition cursor-pointer disabled:opacity-50"
             >
-              {printSuccess ? (
-                <>
-                  <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="text-emerald-700 font-semibold">Printed</span>
-                </>
-              ) : isPrinting ? (
-                <>
-                  <Clock className="h-3.5 w-3.5 animate-spin text-[#F15A24]" />
-                  <span>Printing...</span>
-                </>
-              ) : (
-                <>
-                  <Printer className="h-3.5 w-3.5" />
-                  <span>Print Ticket</span>
-                </>
-              )}
+              <Printer className="h-3.5 w-3.5" />
+              <span>{order.diningType === 'delivery' ? 'Bag tickets' : 'Print Ticket'}</span>
             </button>
           </div>
         </div>

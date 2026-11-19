@@ -5,11 +5,23 @@ export type AdminView =
   | 'analytics'
   | 'inventory'
   | 'products'
+  | 'promotions'
   | 'customers'
   | 'staff'
   | 'transactions'
+  | 'api-tester'
+  | 'roles'
+  | 'content'
+  | 'account'
 
-export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+export type OrderStatus =
+  | 'pending'
+  | 'preparing'
+  | 'ready'
+  | 'out-for-delivery'
+  | 'delivered'
+  | 'cancelled'
+
 export type DiningType = 'dine-in' | 'takeaway' | 'delivery'
 export type KitchenStation = 'all' | 'biryani' | 'curry' | 'grill' | 'breads' | 'dessert'
 
@@ -22,7 +34,16 @@ export interface OrderItem {
   customizations?: string[]
 }
 
+export interface DeliveryDriver {
+  id: string
+  name: string
+  phone: string
+  vehicle?: 'E-Bike' | 'Scooter' | 'Car'
+  status: 'available' | 'on-delivery'
+}
+
 export interface Order {
+  deliveryProgress?: DeliverySummary | null
   id: string
   orderNumber: string
   customerName: string
@@ -32,6 +53,12 @@ export interface Order {
   status: OrderStatus
   items: OrderItem[]
   totalAmount: number
+  subtotal: number
+  tax: number
+  deliveryFee: number
+  discountAmount: number
+  couponCode: string
+  scheduledFor?: string | null
   paymentStatus: 'paid' | 'pending' | 'refunded'
   paymentMethod: 'card' | 'cash' | 'apple-pay'
   createdAt: string
@@ -39,6 +66,24 @@ export interface Order {
   elapsedMinutes: number
   notes?: string
   deliveryAddress?: string
+  assignedDriver?: DeliveryDriver
+}
+
+export interface DeliverySummary {
+  stage: string
+  hasIssue: boolean
+  acceptedAt: string | null
+  pickedUpAt: string | null
+  arrivedAt: string | null
+  deliveredAt: string | null
+  cashCollectedAt: string | null
+  returnRequestedAt?: string | null
+  returnedAt?: string | null
+}
+
+export interface DeliveryActivity extends DeliverySummary {
+  issue: { code: string; note: string; reportedAt: string } | null
+  events: { id: number; action: string; note: string; actorName: string; amount: string | null; createdAt: string }[]
 }
 
 export interface InventoryItem {
@@ -51,19 +96,33 @@ export interface InventoryItem {
   status: 'optimal' | 'low' | 'critical'
   lastRestocked: string
   supplier: string
+  costPerUnit?: number
 }
 
-export interface MenuItem {
+export interface WastageRecord {
   id: string
-  name: string
-  category: string
-  price: number
+  ingredientId: string
+  ingredientName: string
+  quantity: number
+  unit: string
+  reason: 'Expired' | 'Damaged in transit' | 'Kitchen prep error' | 'Storage defect / Spoilage'
+  reportedBy: string
+  timestamp: string
+}
+
+export interface Promotion {
+  id: string
+  code: string
+  title: string
   description: string
-  imageUrl: string
-  isAvailable: boolean
-  rating: number
-  ordersCount: number
-  spicyLevel?: 1 | 2 | 3
+  discountType: 'percentage' | 'fixed'
+  discountValue: number
+  minSpend: number
+  validUntil: string
+  usageLimit: number
+  usageCount: number
+  isActive: boolean
+  badge: string
 }
 
 export interface TableItem {
@@ -90,11 +149,26 @@ export interface Customer {
 export interface StaffMember {
   id: string
   name: string
-  role: 'Head Chef' | 'Sous Chef' | 'Station Cook' | 'Floor Manager' | 'Host' | 'Server'
-  shift: 'Morning (10:00 - 16:00)' | 'Evening (16:00 - 23:00)' | 'Full Day'
+  role: 'General Manager' | 'Floor Manager' | 'Operations Staff' | 'Head Chef' | 'Sous Chef' | 'Station Cook' | 'Host' | 'Server' | 'Cashier' | 'Delivery Rider' | 'Super Admin' | 'Branch Admin' | string
+  shift: 'Morning (10:00 - 16:00)' | 'Evening (16:00 - 23:00)' | 'Full Day' | string
   status: 'active' | 'break' | 'off-duty'
   avatar: string
   assignedSection: string
+  email?: string
+  phone?: string
+  systemRole?: 'super_admin' | 'admin' | 'manager' | 'staff' | 'chef' | 'kitchen_staff' | 'delivery_staff' | 'cashier_front' | 'customer' | string
+}
+
+export interface SystemAlert {
+  id: string
+  title: string
+  message: string
+  type: 'stock_low' | 'stock_critical' | 'order_pending' | 'order_forwarded' | 'order_ready'
+  timestamp: string
+  senderRole?: 'chef' | 'staff' | 'manager' | 'system'
+  senderName?: string
+  ingredientId?: string
+  read?: boolean
 }
 
 export interface AnalyticsSummary {
@@ -106,3 +180,49 @@ export interface AnalyticsSummary {
   averagePrepTimeMinutes: number
   topSellingDishes: { name: string; sales: number; revenue: number }[]
 }
+
+export interface AdminUser {
+  id: number
+  uuid: string
+  username: string
+  email: string
+  fullName: string
+  role: 'super_admin' | 'admin' | 'manager' | 'staff' | 'chef' | 'kitchen_staff' | 'delivery_staff' | 'cashier_front' | string
+  roleDisplay: string
+  avatar?: string | null
+  phone?: string | null
+  isStaff: boolean
+  isSuperAdmin?: boolean
+  permissions: string[]
+}
+
+export interface RoleConfig {
+  id: number | string
+  role: string
+  name: string
+  description?: string
+  permissions: string[]
+  is_customizable: boolean
+  availablePermissions?: Record<string, string>
+  categories?: Record<string, string[]>
+  updated_at?: string
+}
+
+export interface CreateRolePayload {
+  role: string
+  name: string
+  description?: string
+  permissions: string[]
+}
+
+export interface CreateAccountPayload {
+  name: string
+  email: string
+  username?: string
+  password: string
+  role: string
+  phone?: string
+  shift?: string
+  assigned_section?: string
+}
+

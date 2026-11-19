@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  AlertTriangle,
   Bike,
   Check,
   CheckCircle2,
@@ -7,7 +8,7 @@ import {
   Eye,
   Flame,
   LayoutGrid,
-  Plus,
+  PackageCheck,
   Printer,
   Search,
   ShoppingBag,
@@ -19,26 +20,39 @@ import { OrderDetailsModal } from './order-details-modal'
 
 interface KitchenKdsViewProps {
   orders: Order[]
-  onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => void
-  onAddTicket?: (order: Order) => void
+  onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<boolean>
+  busy?: boolean
+  onReportLowStock?: (alert: {
+    ingredientName: string
+    stockRemainingPercent: number
+    note: string
+  }) => Promise<void>
+  inventoryList?: { id: string; name: string; currentStock: number; unit: string }[]
 }
 
-export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: KitchenKdsViewProps) {
+export function KitchenKdsView({
+  orders,
+  onUpdateOrderStatus,
+  busy,
+  onReportLowStock,
+  inventoryList = [],
+}: KitchenKdsViewProps) {
   const [selectedStation, setSelectedStation] = useState<KitchenStation>('all')
-  const [selectedServiceType, setSelectedServiceType] = useState<'all' | 'delivery' | 'takeaway'>('all')
+  const [selectedServiceType, setSelectedServiceType] = useState<'all' | 'dine-in' | 'delivery' | 'takeaway'>('all')
   const [viewMode, setViewMode] = useState<'table' | 'board'>('table')
   const [stageFilter, setStageFilter] = useState<'all' | 'pending' | 'preparing' | 'ready'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<Order | null>(null)
-  const [isNewTicketOpen, setIsNewTicketOpen] = useState(false)
+  const [selectedModalTab, setSelectedModalTab] = useState<'details' | 'slip' | 'handover'>('details')
 
-  // New ticket form state
-  const [newCustomerName, setNewCustomerName] = useState('')
-  const [newDiningType, setNewDiningType] = useState<'delivery' | 'takeaway' | 'dine-in'>('delivery')
-  const [newDishName, setNewDishName] = useState('Royal Chicken Dum Biryani')
-  const [newDishStation, setNewDishStation] = useState<'biryani' | 'curry' | 'grill' | 'breads'>('biryani')
-  const [newDishQuantity, setNewDishQuantity] = useState(1)
-  const [newDishPrice, setNewDishPrice] = useState(14.5)
+  // Stock alert modal state (Chef alerts Manager & Staff)
+  const [isStockAlertModalOpen, setIsStockAlertModalOpen] = useState(false)
+  const [selectedIngredient, setSelectedIngredient] = useState('')
+  const [stockRemainingPercent, setStockRemainingPercent] = useState(20)
+  const [stockAlertNote, setStockAlertNote] = useState('')
+  const [stockAlertSuccess, setStockAlertSuccess] = useState<string | null>(null)
+  const [stockAlertError, setStockAlertError] = useState('')
+  const [stockAlertSending, setStockAlertSending] = useState(false)
 
   // Filter orders by active kitchen status (live tickets)
   const liveOrders = orders.filter(
@@ -77,40 +91,18 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
     return true
   })
 
-  const handleCreateTicket = (e: React.FormEvent) => {
+  const handleSendStockAlert = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newCustomerName.trim()) return
-
-    const newOrder: Order = {
-      id: `ord-${Date.now()}`,
-      orderNumber: `#AS-${Math.floor(2000 + Math.random() * 900)}`,
-      customerName: newCustomerName,
-      customerPhone: '+353 87 ' + Math.floor(1000000 + Math.random() * 9000000),
-      diningType: newDiningType,
-      tableNumber: newDiningType === 'dine-in' ? 'Table 5' : undefined,
-      status: 'pending',
-      totalAmount: newDishPrice * newDishQuantity,
-      paymentStatus: 'paid',
-      paymentMethod: 'card',
-      createdAt: 'Just now',
-      estimatedTimeMinutes: 15,
-      elapsedMinutes: 1,
-      items: [
-        {
-          id: `item-${Date.now()}`,
-          name: newDishName,
-          quantity: newDishQuantity,
-          price: newDishPrice,
-          station: newDishStation,
-        },
-      ],
-    }
-
-    if (onAddTicket) {
-      onAddTicket(newOrder)
-    }
-    setIsNewTicketOpen(false)
-    setNewCustomerName('')
+    if (stockAlertSending) return
+    setStockAlertError('')
+    const name = selectedIngredient || inventoryList[0]?.name
+    if (!name || !onReportLowStock) { setStockAlertError('No saved inventory ingredient is available.'); return }
+    setStockAlertSending(true)
+    try {
+      await onReportLowStock({ ingredientName: name, stockRemainingPercent, note: stockAlertNote.trim() })
+      setStockAlertSuccess(`Stock alert for "${name}" saved for operations.`)
+    } catch (error) { setStockAlertError(error instanceof Error ? error.message : 'Unable to save stock alert. Retry sending.') }
+    finally { setStockAlertSending(false) }
   }
 
   return (
@@ -126,14 +118,18 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsNewTicketOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#F15A24] px-3.5 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:brightness-105 active:scale-95 transition cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>New Ticket</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => { setStockAlertSuccess(null); setStockAlertError(''); setIsStockAlertModalOpen(true) }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3.5 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-500/20 active:scale-95 transition cursor-pointer"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+            <span>⚠️ Report Stock Running Low</span>
+          </button>
+
+
+        </div>
       </div>
 
       {/* 2. Search & Filter Bar Card (Figma node #24057:4468) */}
@@ -186,6 +182,7 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
             {(
               [
                 { id: 'all', label: 'All' },
+                { id: 'dine-in', label: 'Dine-In' },
                 { id: 'delivery', label: 'Delivery' },
                 { id: 'takeaway', label: 'Pickup' },
               ] as const
@@ -355,11 +352,12 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                             </button>
                             <div className="flex items-center gap-1 mt-0.5 text-[11px] text-[#78716C] font-medium">
                               {order.diningType === 'delivery' ? (
-                                <Bike className="h-3.5 w-3.5 text-[#78716C]" />
+                                <><Bike className="h-3.5 w-3.5 text-amber-600" /><span>Delivery</span></>
+                              ) : order.diningType === 'dine-in' ? (
+                                <><TableProperties className="h-3.5 w-3.5 text-blue-600" /><span className="font-semibold text-blue-800">Table {order.tableNumber || 'Dine-In'}</span></>
                               ) : (
-                                <ShoppingBag className="h-3.5 w-3.5 text-[#78716C]" />
+                                <><ShoppingBag className="h-3.5 w-3.5 text-emerald-600" /><span>Takeaway</span></>
                               )}
-                              <span>{order.diningType === 'takeaway' ? 'collection' : order.diningType}</span>
                             </div>
                           </div>
                         </td>
@@ -371,7 +369,7 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                               {order.customerName}
                             </span>
                             <span className="text-[11px] font-normal text-[#78716C]">
-                              {order.items.reduce((acc, i) => acc + i.quantity, 0)} items &bull; €{order.totalAmount.toFixed(2)}
+                              {order.items.reduce((acc, i) => acc + i.quantity, 0)} items &bull; {order.diningType === 'dine-in' ? `Table ${order.tableNumber || 'Dine-In'}` : order.diningType}
                             </span>
                           </div>
                         </td>
@@ -435,7 +433,7 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                             {isIncoming && (
                               <button
                                 type="button"
-                                onClick={() => onUpdateOrderStatus(order.id, 'preparing')}
+                                disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'preparing')}
                                 className="inline-flex items-center gap-1 rounded-lg bg-[#F15A24] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:brightness-105 active:scale-95 transition cursor-pointer"
                               >
                                 <Flame className="h-3 w-3" />
@@ -445,7 +443,7 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                             {isInProgress && (
                               <button
                                 type="button"
-                                onClick={() => onUpdateOrderStatus(order.id, 'ready')}
+                                disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'ready')}
                                 className="inline-flex items-center gap-1 rounded-lg bg-[#059669] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:bg-[#047857] active:scale-95 transition cursor-pointer"
                               >
                                 <Check className="h-3.5 w-3.5" />
@@ -455,11 +453,18 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                             {isReady && (
                               <button
                                 type="button"
-                                onClick={() => onUpdateOrderStatus(order.id, 'delivered')}
-                                className="inline-flex items-center gap-1 rounded-lg bg-[#1C1917] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:bg-[#292524] active:scale-95 transition cursor-pointer"
+                                onClick={() => {
+                                  if (order.diningType === 'delivery') {
+                                    setSelectedModalTab('handover')
+                                    setSelectedOrderForModal(order)
+                                  } else {
+                                    void onUpdateOrderStatus(order.id, 'delivered')
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1 rounded-lg bg-[#B84A22] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:bg-[#a03e1b] active:scale-95 transition cursor-pointer"
                               >
-                                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                                <span>Handover</span>
+                                <PackageCheck className="h-3.5 w-3.5" />
+                                <span>{order.diningType === 'delivery' ? 'Bags & Handover' : 'Confirm Handover'}</span>
                               </button>
                             )}
 
@@ -467,8 +472,11 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                             {(isInProgress || isReady) && (
                               <button
                                 type="button"
-                                onClick={() => alert(`Docket for ${order.orderNumber} sent to kitchen printer!`)}
-                                title="Print Kitchen Docket"
+                                onClick={() => {
+                                  setSelectedModalTab(isReady && order.diningType === 'delivery' ? 'handover' : 'slip')
+                                  setSelectedOrderForModal(order)
+                                }}
+                                title={isReady && order.diningType === 'delivery' ? 'Bag Tickets' : 'Print Kitchen Docket'}
                                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white text-stone-600 hover:border-[#F15A24] hover:text-[#F15A24] transition cursor-pointer"
                               >
                                 <Printer className="h-3.5 w-3.5" />
@@ -478,7 +486,10 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                             {/* View Detail Button */}
                             <button
                               type="button"
-                              onClick={() => setSelectedOrderForModal(order)}
+                              onClick={() => {
+                                setSelectedModalTab('details')
+                                setSelectedOrderForModal(order)
+                              }}
                               title="View Ticket Details"
                               className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white text-stone-600 hover:border-[#F15A24] hover:text-[#F15A24] transition cursor-pointer"
                             >
@@ -527,19 +538,47 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                         {order.elapsedMinutes}m ago
                       </span>
                     </div>
-                    <p className="font-semibold text-xs text-stone-800 mt-1">{order.customerName}</p>
+                    <div className="flex items-center justify-between text-[11px] mt-1 text-stone-500">
+                      <span className="font-semibold text-stone-800">{order.customerName}</span>
+                      {order.diningType === 'delivery' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                          <Bike className="h-3 w-3" /> Delivery
+                        </span>
+                      ) : order.diningType === 'dine-in' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                          <TableProperties className="h-3 w-3" /> Table {order.tableNumber || 'Dine-In'}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                          <ShoppingBag className="h-3 w-3" /> Takeaway
+                        </span>
+                      )}
+                    </div>
                     <div className="my-2 border-t border-stone-100 pt-2 space-y-1">
                       {order.items.map((i) => (
-                        <div key={i.id} className="text-xs text-stone-600 flex justify-between">
-                          <span>
-                            <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
-                          </span>
+                        <div key={i.id} className="text-xs text-stone-700">
+                          <div className="flex justify-between">
+                            <span>
+                              <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
+                            </span>
+                            <span className="text-[10px] uppercase font-semibold text-stone-400">{i.station}</span>
+                          </div>
+                          {i.customizations && i.customizations.length > 0 && (
+                            <p className="text-[10px] font-medium text-amber-700 pl-3">
+                              ⚠ {i.customizations.join(', ')}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
+                    {order.notes && (
+                      <p className="mb-2 rounded bg-amber-50 p-1 text-[10px] text-amber-800 border border-amber-200">
+                        <strong>Note:</strong> {order.notes}
+                      </p>
+                    )}
                     <button
                       type="button"
-                      onClick={() => onUpdateOrderStatus(order.id, 'preparing')}
+                      disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'preparing')}
                       className="w-full rounded-lg bg-[#F15A24] py-1.5 text-xs font-semibold text-white shadow-2xs hover:brightness-105 active:scale-98 transition cursor-pointer"
                     >
                       Fire Ticket
@@ -579,19 +618,47 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                         {order.elapsedMinutes}m
                       </span>
                     </div>
-                    <p className="font-semibold text-xs text-stone-800 mt-1">{order.customerName}</p>
+                    <div className="flex items-center justify-between text-[11px] mt-1 text-stone-500">
+                      <span className="font-semibold text-stone-800">{order.customerName}</span>
+                      {order.diningType === 'delivery' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                          <Bike className="h-3 w-3" /> Delivery
+                        </span>
+                      ) : order.diningType === 'dine-in' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                          <TableProperties className="h-3 w-3" /> Table {order.tableNumber || 'Dine-In'}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                          <ShoppingBag className="h-3 w-3" /> Takeaway
+                        </span>
+                      )}
+                    </div>
                     <div className="my-2 border-t border-stone-100 pt-2 space-y-1">
                       {order.items.map((i) => (
-                        <div key={i.id} className="text-xs text-stone-600 flex justify-between">
-                          <span>
-                            <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
-                          </span>
+                        <div key={i.id} className="text-xs text-stone-700">
+                          <div className="flex justify-between">
+                            <span>
+                              <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
+                            </span>
+                            <span className="text-[10px] uppercase font-semibold text-stone-400">{i.station}</span>
+                          </div>
+                          {i.customizations && i.customizations.length > 0 && (
+                            <p className="text-[10px] font-medium text-amber-700 pl-3">
+                              ⚠ {i.customizations.join(', ')}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
+                    {order.notes && (
+                      <p className="mb-2 rounded bg-amber-50 p-1 text-[10px] text-amber-800 border border-amber-200">
+                        <strong>Note:</strong> {order.notes}
+                      </p>
+                    )}
                     <button
                       type="button"
-                      onClick={() => onUpdateOrderStatus(order.id, 'ready')}
+                      disabled={busy} onClick={() => void onUpdateOrderStatus(order.id, 'ready')}
                       className="w-full rounded-lg bg-[#059669] py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#047857] active:scale-98 transition cursor-pointer"
                     >
                       Mark Ready
@@ -631,22 +698,58 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
                         Ready {order.elapsedMinutes}m
                       </span>
                     </div>
-                    <p className="font-semibold text-xs text-stone-800 mt-1">{order.customerName}</p>
+                    <div className="flex items-center justify-between text-[11px] mt-1 text-stone-500">
+                      <span className="font-semibold text-stone-800">{order.customerName}</span>
+                      {order.diningType === 'delivery' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                          <Bike className="h-3 w-3" /> Delivery
+                        </span>
+                      ) : order.diningType === 'dine-in' ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                          <TableProperties className="h-3 w-3" /> Table {order.tableNumber || 'Dine-In'}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                          <ShoppingBag className="h-3 w-3" /> Takeaway
+                        </span>
+                      )}
+                    </div>
                     <div className="my-2 border-t border-stone-100 pt-2 space-y-1">
                       {order.items.map((i) => (
-                        <div key={i.id} className="text-xs text-stone-600 flex justify-between">
-                          <span>
-                            <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
-                          </span>
+                        <div key={i.id} className="text-xs text-stone-700">
+                          <div className="flex justify-between">
+                            <span>
+                              <strong className="text-[#F15A24]">{i.quantity}&times;</strong> {i.name}
+                            </span>
+                            <span className="text-[10px] uppercase font-semibold text-stone-400">{i.station}</span>
+                          </div>
+                          {i.customizations && i.customizations.length > 0 && (
+                            <p className="text-[10px] font-medium text-amber-700 pl-3">
+                              ⚠ {i.customizations.join(', ')}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
+                    {order.notes && (
+                      <p className="mb-2 rounded bg-amber-50 p-1 text-[10px] text-amber-800 border border-amber-200">
+                        <strong>Note:</strong> {order.notes}
+                      </p>
+                    )}
                     <button
                       type="button"
-                      onClick={() => onUpdateOrderStatus(order.id, 'delivered')}
-                      className="w-full rounded-lg bg-[#1C1917] py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#292524] active:scale-98 transition cursor-pointer"
+                      onClick={() => {
+                        if (order.diningType === 'delivery') {
+                          setSelectedModalTab('handover')
+                          setSelectedOrderForModal(order)
+                        } else {
+                          void onUpdateOrderStatus(order.id, 'delivered')
+                        }
+                      }}
+                      className="w-full rounded-lg bg-[#B84A22] py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#a03e1b] active:scale-98 transition cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      Handover
+                      <PackageCheck className="h-3.5 w-3.5" />
+                      <span>{order.diningType === 'delivery' ? 'Bags & Handover' : 'Confirm Handover'}</span>
                     </button>
                   </div>
                 ))}
@@ -657,128 +760,119 @@ export function KitchenKdsView({ orders, onUpdateOrderStatus, onAddTicket }: Kit
 
       {/* Order Details / Thermal Slip Modal (Figma node #24057:12413) */}
       <OrderDetailsModal
-        order={selectedOrderForModal}
+        order={orders.find(order => order.id === selectedOrderForModal?.id) || null}
+        initialTab={selectedModalTab}
         onClose={() => setSelectedOrderForModal(null)}
         onUpdateStatus={onUpdateOrderStatus}
       />
 
-      {/* New Ticket Modal */}
-      {isNewTicketOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            onClick={() => setIsNewTicketOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-          />
-          <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl border border-stone-200">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h3 className="font-serif text-base font-bold text-stone-900">
-                Fire New Kitchen Ticket
-              </h3>
+      {/* 4. Chef Stock-Running-Low Alert Modal */}
+      {isStockAlertModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-stone-200">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-amber-500/15 text-amber-700">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-sm">
+                    Report Stock Running Low
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    Notify Operations Staff &amp; Manager before stock runs out
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => setIsNewTicketOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 hover:bg-stone-100 transition cursor-pointer"
+                onClick={() => setIsStockAlertModalOpen(false)}
+                className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition"
               >
-                <X className="h-4 w-4 text-stone-600" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateTicket} className="mt-4 space-y-3.5 text-xs">
-              <div>
-                <label className="font-semibold text-stone-700 block mb-1">Customer / Table Name</label>
-                <input
-                  type="text"
-                  required
-                  value={newCustomerName}
-                  onChange={(e) => setNewCustomerName(e.target.value)}
-                  placeholder="e.g. Liam Ward or Table 8"
-                  className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-none focus:border-[#F15A24]"
-                />
+            {stockAlertSuccess ? (
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 text-xs text-center space-y-1">
+                <CheckCircle2 className="h-6 w-6 text-emerald-600 mx-auto" />
+                <p className="font-bold text-sm">Stock Alert Saved</p>
+                <p className="text-[11px]">{stockAlertSuccess}</p>
               </div>
+            ) : (
+              <form onSubmit={handleSendStockAlert} className="space-y-4 text-xs">
+                {stockAlertError && <p role="alert" className="text-red-700">{stockAlertError}</p>}
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Select Ingredient Running Low:
+                  </label>
+                  <select
+                    value={selectedIngredient || inventoryList[0]?.name || ''}
+                    onChange={(e) => setSelectedIngredient(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white p-2.5 text-stone-900 font-medium focus:outline-none focus:border-amber-500"
+                  >
+                    {!inventoryList.length && <option value="">No saved ingredients</option>}
+                    {inventoryList.map(item => <option key={item.id} value={item.name}>{item.name} ({item.currentStock} {item.unit} remaining)</option>)}
+                  </select>
+                </div>
 
-              <div>
-                <label className="font-semibold text-stone-700 block mb-1">Service Type</label>
-                <select
-                  value={newDiningType}
-                  onChange={(e) => setNewDiningType(e.target.value as any)}
-                  className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-none focus:border-[#F15A24]"
-                >
-                  <option value="delivery">Delivery</option>
-                  <option value="takeaway">Pickup / Collection</option>
-                  <option value="dine-in">Dine-In Restaurant</option>
-                </select>
-              </div>
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Current Stock Remaining Estimate:
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { percent: 25, label: '~25% Low', color: 'border-amber-400 bg-amber-50 text-amber-800' },
+                      { percent: 15, label: '~15% Very Low', color: 'border-orange-400 bg-orange-50 text-orange-800' },
+                      { percent: 5, label: '~5% Critical', color: 'border-rose-400 bg-rose-50 text-rose-800' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.percent}
+                        type="button"
+                        onClick={() => setStockRemainingPercent(opt.percent)}
+                        className={`rounded-xl border p-2 text-center font-bold text-xs transition cursor-pointer ${
+                          stockRemainingPercent === opt.percent
+                            ? `${opt.color} ring-2 ring-amber-500`
+                            : 'border-stone-200 text-stone-600 hover:bg-stone-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-              <div>
-                <label className="font-semibold text-stone-700 block mb-1">Dish Name</label>
-                <select
-                  value={newDishName}
-                  onChange={(e) => {
-                    const dish = e.target.value
-                    setNewDishName(dish)
-                    if (dish.includes('Biryani')) {
-                      setNewDishStation('biryani')
-                      setNewDishPrice(16.5)
-                    } else if (dish.includes('Chicken') || dish.includes('Curry')) {
-                      setNewDishStation('curry')
-                      setNewDishPrice(14.5)
-                    } else if (dish.includes('Tandoori') || dish.includes('Tikka')) {
-                      setNewDishStation('grill')
-                      setNewDishPrice(13.5)
-                    } else {
-                      setNewDishStation('breads')
-                      setNewDishPrice(3.5)
-                    }
-                  }}
-                  className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-none focus:border-[#F15A24]"
-                >
-                  <option value="Royal Chicken Dum Biryani">Royal Chicken Dum Biryani (€16.50)</option>
-                  <option value="Kashmiri Lamb Rogan Josh">Kashmiri Lamb Rogan Josh (€16.99)</option>
-                  <option value="Old Delhi Butter Chicken">Old Delhi Butter Chicken (€14.50)</option>
-                  <option value="Flame-Grilled Tandoori Chicken">Flame-Grilled Tandoori Chicken (€13.50)</option>
-                  <option value="Garlic Butter Naan">Garlic Butter Naan (€3.50)</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="font-semibold text-stone-700 block mb-1">Quantity</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={newDishQuantity}
-                    onChange={(e) => setNewDishQuantity(Number(e.target.value))}
-                    className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 focus:outline-none focus:border-[#F15A24]"
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Chef Note / Restock Urgent Request (Optional):
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={stockAlertNote}
+                    onChange={(e) => setStockAlertNote(e.target.value)}
+                    placeholder="e.g. Running out fast during dinner prep. Need 5 kg before 8 PM."
+                    className="w-full rounded-xl border border-stone-200 p-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-500"
                   />
                 </div>
-                <div className="flex-1">
-                  <label className="font-semibold text-stone-700 block mb-1">Station</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={newDishStation.toUpperCase()}
-                    className="w-full rounded-xl border border-stone-200 bg-stone-100 p-2.5 text-stone-600 font-bold uppercase"
-                  />
-                </div>
-              </div>
 
-              <div className="pt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsNewTicketOpen(false)}
-                  className="flex-1 rounded-xl border border-stone-200 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-[#F15A24] py-2.5 text-xs font-bold text-white shadow-xs hover:brightness-105 active:scale-98 transition cursor-pointer"
-                >
-                  Fire Ticket
-                </button>
-              </div>
-            </form>
+                <div className="pt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsStockAlertModalOpen(false)}
+                    className="flex-1 rounded-xl border border-stone-200 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-xl bg-amber-600 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 active:scale-98 transition cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span>{stockAlertSending ? 'Saving?' : 'Save Stock Alert'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
