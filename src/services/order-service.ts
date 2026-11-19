@@ -10,7 +10,7 @@ interface PaginatedOrdersResponse {
   results: Record<string, unknown>[]
 }
 
-function mapOrderFromApi(raw: Record<string, unknown>): Order {
+export function mapOrderFromApi(raw: Record<string, unknown>): Order {
   const items = Array.isArray(raw.items)
     ? (raw.items as Record<string, unknown>[]).map((item) => {
         let customs: string[] = []

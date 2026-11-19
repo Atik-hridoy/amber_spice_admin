@@ -3,16 +3,21 @@ import {
   AlertTriangle,
   Bell,
   CheckCircle2,
+  ChefHat,
   Clock,
   LogOut,
   Menu,
   RotateCw,
   Search,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
+  Wifi,
+  WifiOff,
   X,
 } from 'lucide-react'
 import type { AdminUser, SystemAlert } from '../../types/admin'
+import type { OperationalNotification } from '../../services/notification-service'
 
 interface HeaderProps {
   onOpenMobileSidebar: () => void
@@ -22,8 +27,13 @@ interface HeaderProps {
   currentUser?: AdminUser | null
   onLogout?: () => void
   alerts?: SystemAlert[]
+  notifications?: OperationalNotification[]
   onDismissAlert?: (id: string) => void
+  onMarkNotificationRead?: (id: number | string) => void
+  onMarkAllNotificationsRead?: () => void
+  onSelectOrder?: (orderId: string) => void
   onSettings?: () => void
+  wsConnected?: boolean
 }
 
 export function Header({
@@ -34,15 +44,31 @@ export function Header({
   currentUser,
   onLogout,
   alerts = [],
+  notifications = [],
   onDismissAlert,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
+  onSelectOrder,
   onSettings,
+  wsConnected = true,
 }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [activeTab, setActiveTab] = useState<'all' | 'orders' | 'kitchen' | 'stock'>('all')
 
   const currentRoleDisplay = currentUser?.roleDisplay || currentUser?.role || ''
 
   const unreadAlertsCount = alerts.filter((a) => !a.read).length
+  const unreadNotifsCount = notifications.filter((n) => !n.isRead).length
+  const totalUnread = unreadAlertsCount + unreadNotifsCount
+
+  // Filter notifications by tab
+  const filteredNotifs = notifications.filter((n) => {
+    if (activeTab === 'orders') return n.type === 'order_created' || n.type === 'order_status'
+    if (activeTab === 'kitchen') return n.type === 'kitchen_alert' || n.type === 'kitchen_ready'
+    if (activeTab === 'stock') return n.type === 'stock_alert'
+    return true
+  })
 
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-[#E7E5E4]/90 bg-white px-4 sm:px-6 lg:px-10 backdrop-blur-md">
@@ -74,6 +100,26 @@ export function Header({
           <span className="text-[11px] font-bold text-stone-800">
             {currentRoleDisplay}
           </span>
+        </div>
+
+        {/* WebSocket Live Status */}
+        <div
+          title={wsConnected ? 'Real-time WebSocket Live' : 'Reconnecting to live socket...'}
+          className="hidden md:flex items-center gap-1 rounded-full border border-stone-200 px-2 py-0.5 text-[10px] font-medium text-stone-600"
+        >
+          {wsConnected ? (
+            <>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <Wifi className="h-2.5 w-2.5 text-emerald-600" />
+              <span>Live Socket</span>
+            </>
+          ) : (
+            <>
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />
+              <WifiOff className="h-2.5 w-2.5 text-amber-600" />
+              <span className="text-amber-700">Connecting...</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -107,34 +153,74 @@ export function Header({
             className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white text-[#57534E] hover:bg-stone-50 hover:border-[#F15A24] transition cursor-pointer"
           >
             <Bell className="h-3.5 w-3.5" />
-            {unreadAlertsCount > 0 && (
+            {totalUnread > 0 && (
               <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#F15A24] text-[10px] font-bold text-white ring-2 ring-white animate-bounce">
-                {unreadAlertsCount}
+                {totalUnread > 99 ? '99+' : totalUnread}
               </span>
             )}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-88 rounded-2xl border border-[#E7E5E4] bg-white p-3 shadow-xl z-50">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                <span className="text-xs font-bold text-[#1C1917] flex items-center gap-1.5">
-                  <Bell className="h-3.5 w-3.5 text-[#F15A24]" />
-                  <span>Real-time Operations Alerts</span>
-                </span>
-                <span className="rounded-full bg-[#F15A24]/10 px-2 py-0.5 text-[10px] font-bold text-[#F15A24]">
-                  {alerts.length} Active
-                </span>
+            <div className="absolute right-0 mt-2 w-88 sm:w-96 rounded-2xl border border-[#E7E5E4] bg-white p-3.5 shadow-2xl z-50">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <Bell className="h-4 w-4 text-[#F15A24]" />
+                  <span className="text-xs font-bold text-[#1C1917]">
+                    Operations Notifications
+                  </span>
+                  {totalUnread > 0 && (
+                    <span className="rounded-full bg-[#F15A24]/10 px-1.5 py-0.2 text-[10px] font-bold text-[#F15A24]">
+                      {totalUnread} new
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {onMarkAllNotificationsRead && totalUnread > 0 && (
+                    <button
+                      type="button"
+                      onClick={onMarkAllNotificationsRead}
+                      className="text-[11px] font-semibold text-[#F15A24] hover:underline cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowNotifications(false)}
+                    className="text-stone-400 hover:text-stone-700 p-0.5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
 
-              <div className="mt-2.5 space-y-2 max-h-80 overflow-y-auto">
-                {alerts.length === 0 ? (
-                  <p className="text-xs text-stone-400 text-center py-4">
-                    No active stock alerts or pending notices.
-                  </p>
-                ) : (
+              {/* Tabs */}
+              <div className="flex items-center gap-1 border-b border-stone-100 py-2 text-xs">
+                {(['all', 'orders', 'kitchen', 'stock'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-medium capitalize transition cursor-pointer ${
+                      activeTab === tab
+                        ? 'bg-stone-900 text-white font-bold'
+                        : 'text-stone-600 hover:bg-stone-100'
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              {/* Notifications List */}
+              <div className="mt-2.5 space-y-2 max-h-84 overflow-y-auto pr-0.5">
+                {/* Stock alerts from legacy alert state if on 'all' or 'stock' */}
+                {(activeTab === 'all' || activeTab === 'stock') &&
                   alerts.map((alert) => (
                     <div
-                      key={alert.id}
+                      key={`alert-${alert.id}`}
                       className={`flex items-start justify-between gap-2.5 rounded-xl p-2.5 text-xs border ${
                         alert.type === 'stock_low' || alert.type === 'stock_critical'
                           ? 'bg-amber-500/10 border-amber-500/20 text-amber-900'
@@ -171,7 +257,81 @@ export function Header({
                         </button>
                       )}
                     </div>
-                  ))
+                  ))}
+
+                {/* Live Notifications from DB / Socket */}
+                {filteredNotifs.map((notif) => {
+                  const isOrder = notif.type === 'order_created'
+                  const isKitchen = notif.type === 'kitchen_alert' || notif.type === 'kitchen_ready'
+                  const isStock = notif.type === 'stock_alert'
+
+                  return (
+                    <div
+                      key={`notif-${notif.id}`}
+                      onClick={() => {
+                        if (!notif.isRead && onMarkNotificationRead) {
+                          onMarkNotificationRead(notif.id)
+                        }
+                        if (notif.orderId && onSelectOrder) {
+                          onSelectOrder(String(notif.orderId))
+                          setShowNotifications(false)
+                        }
+                      }}
+                      className={`flex items-start justify-between gap-2.5 rounded-xl p-2.5 text-xs border transition cursor-pointer ${
+                        !notif.isRead
+                          ? 'bg-amber-500/5 border-amber-300 font-medium'
+                          : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5 ${
+                            isOrder
+                              ? 'bg-[#F15A24]/10 text-[#F15A24]'
+                              : isKitchen
+                              ? 'bg-rose-500/10 text-rose-600'
+                              : isStock
+                              ? 'bg-amber-500/10 text-amber-600'
+                              : 'bg-blue-500/10 text-blue-600'
+                          }`}
+                        >
+                          {isOrder ? (
+                            <ShoppingBag className="h-3.5 w-3.5" />
+                          ) : isKitchen ? (
+                            <ChefHat className="h-3.5 w-3.5" />
+                          ) : (
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-bold text-stone-900 truncate">
+                              {notif.title}
+                            </p>
+                            {!notif.isRead && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-[#F15A24]" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-stone-600 mt-0.5 line-clamp-2">
+                            {notif.message}
+                          </p>
+                          <p className="text-[10px] text-stone-400 mt-1">
+                            {new Date(notif.createdAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {filteredNotifs.length === 0 && alerts.length === 0 && (
+                  <p className="text-xs text-stone-400 text-center py-6">
+                    All caught up! No recent notifications.
+                  </p>
                 )}
               </div>
             </div>
