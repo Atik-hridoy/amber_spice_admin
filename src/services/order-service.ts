@@ -41,6 +41,10 @@ export function mapOrderFromApi(raw: Record<string, unknown>): Order {
     customerPhone: raw.customerPhone ? String(raw.customerPhone) : undefined,
     diningType: (raw.diningType as 'dine-in' | 'takeaway' | 'delivery') || 'dine-in',
     tableNumber: raw.tableNumber ? String(raw.tableNumber) : undefined,
+    pickupCode: raw.pickupCode ? String(raw.pickupCode) : undefined,
+    pickupRack: raw.pickupRack ? String(raw.pickupRack) : undefined,
+    customerArrivedAt: raw.customerArrivedAt ? String(raw.customerArrivedAt) : null,
+    pickedUpAt: raw.pickedUpAt ? String(raw.pickedUpAt) : null,
     status: String(raw.status).replace('out_for_delivery', 'out-for-delivery') as OrderStatus,
     items,
     totalAmount: Number(raw.totalAmount) || 0,
@@ -196,6 +200,23 @@ export const orderService = {
   async collectCash(id: string): Promise<Order> {
     const raw = await adminRequest<Record<string, unknown>>(`orders/${id}/collect-cash/`, {
       method: 'POST', requireAuth: true, body: JSON.stringify({ payment_status: 'paid' }),
+    })
+    return mapOrderFromApi(raw)
+  },
+
+  async completeTakeaway(id: string): Promise<Order> {
+    const raw = await adminRequest<Record<string, unknown>>(`orders/${id}/complete-takeaway/`, {
+      method: 'POST',
+      requireAuth: true,
+    })
+    return mapOrderFromApi(raw)
+  },
+
+  async assignPickupRack(id: string, pickupRack: string): Promise<Order> {
+    const raw = await adminRequest<Record<string, unknown>>(`orders/${id}/pickup-rack/`, {
+      method: 'PATCH',
+      requireAuth: true,
+      body: JSON.stringify({ pickupRack }),
     })
     return mapOrderFromApi(raw)
   },

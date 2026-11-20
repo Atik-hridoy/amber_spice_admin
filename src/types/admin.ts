@@ -50,6 +50,10 @@ export interface Order {
   customerPhone?: string
   diningType: DiningType
   tableNumber?: string
+  pickupCode?: string
+  pickupRack?: string
+  customerArrivedAt?: string | null
+  pickedUpAt?: string | null
   status: OrderStatus
   items: OrderItem[]
   totalAmount: number

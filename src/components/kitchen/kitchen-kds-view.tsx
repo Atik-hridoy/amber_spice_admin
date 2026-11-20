@@ -21,6 +21,7 @@ import { OrderDetailsModal } from './order-details-modal'
 interface KitchenKdsViewProps {
   orders: Order[]
   onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<boolean>
+  onCompleteTakeaway?: (orderId: string) => Promise<boolean>
   busy?: boolean
   onReportLowStock?: (alert: {
     ingredientName: string
@@ -33,6 +34,7 @@ interface KitchenKdsViewProps {
 export function KitchenKdsView({
   orders,
   onUpdateOrderStatus,
+  onCompleteTakeaway,
   busy,
   onReportLowStock,
   inventoryList = [],
@@ -356,7 +358,23 @@ export function KitchenKdsView({
                               ) : order.diningType === 'dine-in' ? (
                                 <><TableProperties className="h-3.5 w-3.5 text-blue-600" /><span className="font-semibold text-blue-800">Table {order.tableNumber || 'Dine-In'}</span></>
                               ) : (
-                                <><ShoppingBag className="h-3.5 w-3.5 text-emerald-600" /><span>Takeaway</span></>
+                                <>
+                                  <ShoppingBag className="h-3.5 w-3.5 text-emerald-600" />
+                                  <span>Takeaway</span>
+                                  <span className="font-mono font-bold text-[10px] bg-stone-900 text-white px-1.5 py-0.2 rounded ml-1">
+                                    #{order.pickupCode || 'TK'}
+                                  </span>
+                                  {order.customerArrivedAt && (
+                                    <span className="inline-flex items-center rounded bg-emerald-600 text-white px-1.5 py-0.2 text-[9px] font-bold animate-pulse ml-1">
+                                      At Counter
+                                    </span>
+                                  )}
+                                  {order.pickupRack && (
+                                    <span className="text-[9px] font-medium text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200 ml-1">
+                                      Rack: {order.pickupRack}
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
@@ -453,18 +471,31 @@ export function KitchenKdsView({
                             {isReady && (
                               <button
                                 type="button"
+                                disabled={busy}
                                 onClick={() => {
                                   if (order.diningType === 'delivery') {
                                     setSelectedModalTab('handover')
                                     setSelectedOrderForModal(order)
+                                  } else if (order.diningType === 'takeaway' && onCompleteTakeaway) {
+                                    void onCompleteTakeaway(order.id)
                                   } else {
                                     void onUpdateOrderStatus(order.id, 'delivered')
                                   }
                                 }}
-                                className="inline-flex items-center gap-1 rounded-lg bg-[#B84A22] px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] hover:bg-[#a03e1b] active:scale-95 transition cursor-pointer"
+                                className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] active:scale-95 transition cursor-pointer ${
+                                  order.diningType === 'takeaway'
+                                    ? 'bg-emerald-700 hover:bg-emerald-800'
+                                    : 'bg-[#B84A22] hover:bg-[#a03e1b]'
+                                }`}
                               >
                                 <PackageCheck className="h-3.5 w-3.5" />
-                                <span>{order.diningType === 'delivery' ? 'Bags & Handover' : 'Confirm Handover'}</span>
+                                <span>
+                                  {order.diningType === 'delivery'
+                                    ? 'Bags & Handover'
+                                    : order.diningType === 'takeaway'
+                                    ? `Takeaway Handover (#${order.pickupCode || 'TK'})`
+                                    : 'Confirm Handover'}
+                                </span>
                               </button>
                             )}
 
@@ -549,9 +580,19 @@ export function KitchenKdsView({
                           <TableProperties className="h-3 w-3" /> Table {order.tableNumber || 'Dine-In'}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                          <ShoppingBag className="h-3 w-3" /> Takeaway
-                        </span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                            <ShoppingBag className="h-3 w-3" /> Takeaway
+                          </span>
+                          <span className="font-mono font-bold text-[10px] bg-stone-900 text-white px-1.5 py-0.2 rounded">
+                            #{order.pickupCode || 'TK'}
+                          </span>
+                          {order.customerArrivedAt && (
+                            <span className="inline-flex items-center rounded bg-emerald-600 text-white px-1.5 py-0.2 text-[9px] font-bold animate-pulse">
+                              At Counter
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div className="my-2 border-t border-stone-100 pt-2 space-y-1">
@@ -629,9 +670,19 @@ export function KitchenKdsView({
                           <TableProperties className="h-3 w-3" /> Table {order.tableNumber || 'Dine-In'}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                          <ShoppingBag className="h-3 w-3" /> Takeaway
-                        </span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                            <ShoppingBag className="h-3 w-3" /> Takeaway
+                          </span>
+                          <span className="font-mono font-bold text-[10px] bg-stone-900 text-white px-1.5 py-0.2 rounded">
+                            #{order.pickupCode || 'TK'}
+                          </span>
+                          {order.customerArrivedAt && (
+                            <span className="inline-flex items-center rounded bg-emerald-600 text-white px-1.5 py-0.2 text-[9px] font-bold animate-pulse">
+                              At Counter
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div className="my-2 border-t border-stone-100 pt-2 space-y-1">
@@ -709,9 +760,19 @@ export function KitchenKdsView({
                           <TableProperties className="h-3 w-3" /> Table {order.tableNumber || 'Dine-In'}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                          <ShoppingBag className="h-3 w-3" /> Takeaway
-                        </span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                            <ShoppingBag className="h-3 w-3" /> Takeaway
+                          </span>
+                          <span className="font-mono font-bold text-[10px] bg-stone-900 text-white px-1.5 py-0.2 rounded">
+                            #{order.pickupCode || 'TK'}
+                          </span>
+                          {order.customerArrivedAt && (
+                            <span className="inline-flex items-center rounded bg-emerald-600 text-white px-1.5 py-0.2 text-[9px] font-bold animate-pulse">
+                              At Counter
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div className="my-2 border-t border-stone-100 pt-2 space-y-1">
@@ -738,18 +799,31 @@ export function KitchenKdsView({
                     )}
                     <button
                       type="button"
+                      disabled={busy}
                       onClick={() => {
                         if (order.diningType === 'delivery') {
                           setSelectedModalTab('handover')
                           setSelectedOrderForModal(order)
+                        } else if (order.diningType === 'takeaway' && onCompleteTakeaway) {
+                          void onCompleteTakeaway(order.id)
                         } else {
                           void onUpdateOrderStatus(order.id, 'delivered')
                         }
                       }}
-                      className="w-full rounded-lg bg-[#B84A22] py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#a03e1b] active:scale-98 transition cursor-pointer flex items-center justify-center gap-1.5"
+                      className={`w-full rounded-lg py-1.5 text-xs font-semibold text-white shadow-2xs active:scale-98 transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                        order.diningType === 'takeaway'
+                          ? 'bg-emerald-700 hover:bg-emerald-800'
+                          : 'bg-[#B84A22] hover:bg-[#a03e1b]'
+                      }`}
                     >
                       <PackageCheck className="h-3.5 w-3.5" />
-                      <span>{order.diningType === 'delivery' ? 'Bags & Handover' : 'Confirm Handover'}</span>
+                      <span>
+                        {order.diningType === 'delivery'
+                          ? 'Bags & Handover'
+                          : order.diningType === 'takeaway'
+                          ? `Takeaway Handover (#${order.pickupCode || 'TK'})`
+                          : 'Confirm Handover'}
+                      </span>
                     </button>
                   </div>
                 ))}

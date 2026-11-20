@@ -20,6 +20,7 @@ import { DeliveryActivityPanel } from './delivery-activity-panel'
 interface OrdersViewProps {
   orders: Order[]
   onUpdateOrderStatus: (id: string, status: OrderStatus) => Promise<boolean>
+  onCompleteTakeaway?: (id: string) => Promise<boolean>
   onForwardToChef?: (order: Order) => void
   currentUser: AdminUser
   busy?: boolean
@@ -35,7 +36,7 @@ const statusBadgeStyles: Record<string, { label: string; bg: string; text: strin
   cancelled: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
 }
 
-export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef, currentUser, busy, onReload }: OrdersViewProps) {
+export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, onForwardToChef, currentUser, busy, onReload }: OrdersViewProps) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [diningType, setDiningType] = useState('all')
@@ -343,7 +344,7 @@ export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef, curre
                       {/* Customer & Dining Type */}
                       <td className="px-4 py-3.5">
                         <span className="font-semibold text-stone-900 block">{order.customerName}</span>
-                        <div className="flex items-center gap-1 mt-0.5">
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           {order.diningType === 'delivery' ? (
                             <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.2 text-[10px] font-bold text-amber-700 border border-amber-200">
                               <Bike className="h-3 w-3" /> Delivery
@@ -356,6 +357,25 @@ export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef, curre
                             <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700 border border-emerald-200">
                               <ShoppingBag className="h-3 w-3" /> Takeaway
                             </span>
+                          )}
+
+                          {order.diningType === 'takeaway' && (
+                            <>
+                              <span className="font-mono font-bold text-[10px] bg-stone-900 text-white px-1.5 py-0.2 rounded shadow-2xs">
+                                #{order.pickupCode || 'TK'}
+                              </span>
+                              {order.customerArrivedAt && (
+                                <span className="inline-flex items-center gap-1 rounded bg-emerald-600 text-white px-1.5 py-0.2 text-[10px] font-bold animate-pulse shadow-2xs">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                                  At Counter Now
+                                </span>
+                              )}
+                              {order.pickupRack && (
+                                <span className="text-[10px] font-medium text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                                  Rack: {order.pickupRack}
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                         {order.deliveryAddress && (
@@ -468,13 +488,23 @@ export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef, curre
                                 if (order.diningType === 'delivery') {
                                   setSelectedTab('handover')
                                   setSelectedId(order.id)
+                                } else if (order.diningType === 'takeaway' && onCompleteTakeaway) {
+                                  void action(() => onCompleteTakeaway(order.id))
                                 } else {
                                   void onUpdateOrderStatus(order.id, 'delivered')
                                 }
                               }}
-                              className="rounded-lg bg-stone-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-stone-800 transition cursor-pointer"
+                              className={`rounded-lg px-2.5 py-1 text-xs font-semibold text-white transition cursor-pointer ${
+                                order.diningType === 'takeaway'
+                                  ? 'bg-emerald-700 hover:bg-emerald-800'
+                                  : 'bg-stone-900 hover:bg-stone-800'
+                              }`}
                             >
-                              {order.diningType === 'delivery' ? 'Kitchen handover & bag ticket' : 'Confirm Handover'}
+                              {order.diningType === 'delivery'
+                                ? 'Kitchen handover & bag ticket'
+                                : order.diningType === 'takeaway'
+                                ? `Handover & Complete (#${order.pickupCode || 'TK'})`
+                                : 'Confirm Handover'}
                             </button>
                           )}
 
@@ -523,7 +553,7 @@ export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef, curre
               <article key={order.id} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs space-y-3.5">
                 {/* Header Row */}
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="font-bold text-base text-[#1C1917]">{order.orderNumber}</h2>
                     {order.diningType === 'delivery' ? (
                       <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
@@ -537,6 +567,25 @@ export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef, curre
                       <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
                         <ShoppingBag className="h-3 w-3" /> Takeaway
                       </span>
+                    )}
+
+                    {order.diningType === 'takeaway' && (
+                      <>
+                        <span className="font-mono font-bold text-[10px] bg-stone-900 text-white px-2 py-0.5 rounded shadow-2xs">
+                          #{order.pickupCode || 'TK'}
+                        </span>
+                        {order.customerArrivedAt && (
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-600 text-white px-2 py-0.5 text-[10px] font-bold animate-pulse">
+                            <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                            At Counter Now
+                          </span>
+                        )}
+                        {order.pickupRack && (
+                          <span className="text-[10px] font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                            Rack: {order.pickupRack}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${badge.bg} ${badge.text} ${badge.border}`}>
@@ -628,17 +677,27 @@ export function OrdersView({ orders, onUpdateOrderStatus, onForwardToChef, curre
                   {(canManage || canDeliver) && order.status === 'ready' && (
                     <button
                       type="button"
-                      className="rounded-lg bg-stone-900 px-3 py-1.5 font-semibold text-white hover:bg-stone-800 transition cursor-pointer"
+                      className={`rounded-lg px-3 py-1.5 font-semibold text-white transition cursor-pointer ${
+                        order.diningType === 'takeaway'
+                          ? 'bg-emerald-700 hover:bg-emerald-800'
+                          : 'bg-stone-900 hover:bg-stone-800'
+                      }`}
                       onClick={() => {
                         if (order.diningType === 'delivery') {
                           setSelectedTab('handover')
                           setSelectedId(order.id)
+                        } else if (order.diningType === 'takeaway' && onCompleteTakeaway) {
+                          void action(() => onCompleteTakeaway(order.id))
                         } else {
                           void onUpdateOrderStatus(order.id, 'delivered')
                         }
                       }}
                     >
-                      {order.diningType === 'delivery' ? 'Kitchen handover & bag ticket' : 'Confirm Handover'}
+                      {order.diningType === 'delivery'
+                        ? 'Kitchen handover & bag ticket'
+                        : order.diningType === 'takeaway'
+                        ? `Handover & Complete (#${order.pickupCode || 'TK'})`
+                        : 'Confirm Handover'}
                     </button>
                   )}
 

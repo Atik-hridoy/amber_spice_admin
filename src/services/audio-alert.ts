@@ -145,3 +145,37 @@ export function playStockAlert(): void {
     console.warn('Stock alert error:', err)
   }
 }
+
+/**
+ * Plays an attention-grabbing arrival doorbell (E5 -> G#5 -> B5) when a takeaway
+ * customer taps "I'm at the Counter" to pick up their food.
+ */
+export function playCustomerArrivedAlert(): void {
+  if (isAudioMuted()) return
+  try {
+    const ctx = getAudioContext()
+    if (!ctx) return
+
+    const now = ctx.currentTime
+    const notes = [659.25, 830.61, 987.77] // E5, G#5, B5 chime
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      const startTime = now + idx * 0.12
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, startTime)
+      gain.gain.setValueAtTime(0, startTime)
+      gain.gain.linearRampToValueAtTime(0.25, startTime + 0.03)
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(startTime)
+      osc.stop(startTime + 0.5)
+    })
+  } catch (err) {
+    console.warn('Customer arrived alert error:', err)
+  }
+}

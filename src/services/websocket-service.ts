@@ -13,6 +13,7 @@ export interface WebSocketEventMap {
   'order.status_updated': { order: Record<string, unknown>; notification?: Record<string, unknown> }
   'kitchen.ticket_received': { ticket: Record<string, unknown>; notification?: Record<string, unknown> }
   'kitchen.ticket_updated': { ticket: Record<string, unknown>; notification?: Record<string, unknown> }
+  'customer.arrived': { order: Record<string, unknown>; notification?: Record<string, unknown> }
   'stock.alert': { alert: Record<string, unknown> }
   'connection.status': { connected: boolean; reconnecting: boolean }
 }

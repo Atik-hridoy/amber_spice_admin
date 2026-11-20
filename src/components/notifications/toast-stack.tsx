@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   AlertTriangle,
+  BellRing,
   CheckCircle2,
   ChefHat,
   Flame,
@@ -16,9 +17,10 @@ export interface ToastItem {
   id: string
   title: string
   message: string
-  type: 'order_created' | 'order_status' | 'kitchen_ticket' | 'stock_alert'
+  type: 'order_created' | 'order_status' | 'kitchen_ticket' | 'stock_alert' | 'customer_arrived'
   orderId?: string
   orderNumber?: string
+  pickupCode?: string
   customerName?: string
   diningType?: string
   totalAmount?: number | string
@@ -173,8 +175,11 @@ function ToastCard({
   const isOrder = toast.type === 'order_created'
   const isKitchen = toast.type === 'kitchen_ticket'
   const isStock = toast.type === 'stock_alert'
+  const isCustomerArrived = toast.type === 'customer_arrived'
 
-  const borderAccent = isOrder
+  const borderAccent = isCustomerArrived
+    ? 'border-l-4 border-l-emerald-500'
+    : isOrder
     ? 'border-l-4 border-l-[#F15A24]'
     : isKitchen
     ? 'border-l-4 border-l-rose-500'
@@ -195,7 +200,13 @@ function ToastCard({
       >
         <div
           className={`h-full transition-all linear ${
-            isOrder ? 'bg-[#F15A24]' : isKitchen ? 'bg-rose-500' : 'bg-amber-500'
+            isCustomerArrived
+              ? 'bg-emerald-500'
+              : isOrder
+              ? 'bg-[#F15A24]'
+              : isKitchen
+              ? 'bg-rose-500'
+              : 'bg-amber-500'
           }`}
           style={{ width: `${progress}%`, transitionDuration: '50ms' }}
         />
@@ -205,7 +216,9 @@ function ToastCard({
         <div className="flex items-start gap-2.5 min-w-0">
           <div
             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-xs ${
-              isOrder
+              isCustomerArrived
+                ? 'bg-emerald-500/15 text-emerald-700 ring-2 ring-emerald-500/30'
+                : isOrder
                 ? 'bg-[#F15A24]/10 text-[#F15A24]'
                 : isKitchen
                 ? 'bg-rose-500/10 text-rose-600'
@@ -214,7 +227,9 @@ function ToastCard({
                 : 'bg-blue-500/10 text-blue-600'
             }`}
           >
-            {isOrder ? (
+            {isCustomerArrived ? (
+              <BellRing className="h-4 w-4 animate-bounce" />
+            ) : isOrder ? (
               <ShoppingBag className="h-4 w-4" />
             ) : isKitchen ? (
               <ChefHat className="h-4 w-4" />
@@ -273,6 +288,20 @@ function ToastCard({
 
       {/* Action Buttons */}
       <div className="mt-3 flex items-center justify-end gap-2 border-t border-stone-100 pt-2.5">
+        {isCustomerArrived && toast.orderId && onViewOrder && (
+          <button
+            type="button"
+            onClick={() => {
+              onViewOrder(toast.orderId!)
+              onDismiss()
+            }}
+            className="flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition cursor-pointer"
+          >
+            <ShoppingBag className="h-3.5 w-3.5" />
+            <span>Attend at Counter</span>
+          </button>
+        )}
+
         {isOrder && toast.orderId && onSendToKitchen && (
           <button
             type="button"

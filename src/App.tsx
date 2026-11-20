@@ -25,7 +25,7 @@ import { listRecords } from './services/resource-service'
 import { mapOrderFromApi, orderService } from './services/order-service'
 import { inventoryService } from './services/inventory-service'
 import { websocketService } from './services/websocket-service'
-import { playKitchenAlert, playOrderAlert, playStockAlert } from './services/audio-alert'
+import { playCustomerArrivedAlert, playKitchenAlert, playOrderAlert, playStockAlert } from './services/audio-alert'
 import { ToastStack, type ToastItem } from './components/notifications/toast-stack'
 import { notificationService, type OperationalNotification } from './services/notification-service'
 
@@ -297,6 +297,29 @@ export default function App() {
       setOrders((prev) => prev.map((o) => (o.id === mapped.id ? mapped : o)))
     })
 
+    const unsubCustomerArrived = websocketService.on('customer.arrived', (event) => {
+      const mapped = mapOrderFromApi(event.order)
+      setOrders((prev) => [mapped, ...prev.filter((o) => o.id !== mapped.id)])
+      playCustomerArrivedAlert()
+
+      const toastId = `arr-${mapped.id}-${Date.now()}`
+      setToasts((prev) => [
+        {
+          id: toastId,
+          title: `Customer at Counter! #${mapped.pickupCode || mapped.orderNumber}`,
+          message: `${mapped.customerName} has arrived at the counter for Takeaway ${mapped.pickupCode || mapped.orderNumber}.`,
+          type: 'customer_arrived',
+          orderId: mapped.id,
+          orderNumber: mapped.orderNumber,
+          pickupCode: mapped.pickupCode,
+          customerName: mapped.customerName,
+          diningType: mapped.diningType,
+          itemsCount: mapped.items.reduce((acc, it) => acc + it.quantity, 0),
+        },
+        ...prev,
+      ])
+    })
+
     const unsubStockAlert = websocketService.on('stock.alert', (event) => {
       playStockAlert()
       const alertData = event.alert || {}
@@ -333,10 +356,26 @@ export default function App() {
       unsubOrderStatus()
       unsubKitchenTicket()
       unsubKitchenTicketUpdated()
+      unsubCustomerArrived()
       unsubStockAlert()
       websocketService.disconnect()
     }
   }, [currentUser])
+
+  async function handleCompleteTakeaway(id: string) {
+    setOrderBusy(true)
+    setError('')
+    try {
+      const saved = await orderService.completeTakeaway(id)
+      setOrders((previous) => previous.map((order) => (order.id === saved.id ? saved : order)))
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to complete takeaway handover.')
+      return false
+    } finally {
+      setOrderBusy(false)
+    }
+  }
 
   async function updateStatus(id: string, status: OrderStatus) {
     setOrderBusy(true)
@@ -517,6 +556,7 @@ export default function App() {
             <KitchenKdsView
               orders={orders}
               onUpdateOrderStatus={updateStatus}
+              onCompleteTakeaway={handleCompleteTakeaway}
               onReportLowStock={reportStock}
               inventoryList={inventory}
               busy={orderBusy}
@@ -526,6 +566,7 @@ export default function App() {
             <OrdersView
               orders={orders}
               onUpdateOrderStatus={updateStatus}
+              onCompleteTakeaway={handleCompleteTakeaway}
               currentUser={currentUser}
               busy={orderBusy}
               onReload={() => void loadOrders()}
