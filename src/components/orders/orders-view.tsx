@@ -16,11 +16,12 @@ import { orderService } from '../../services/order-service'
 import { OrderDetailsModal } from '../kitchen/order-details-modal'
 import { CreateOrderForm } from './create-order-form'
 import { DeliveryActivityPanel } from './delivery-activity-panel'
+import { TakeawaySettlementModal } from './takeaway-settlement-modal'
 
 interface OrdersViewProps {
   orders: Order[]
   onUpdateOrderStatus: (id: string, status: OrderStatus) => Promise<boolean>
-  onCompleteTakeaway?: (id: string) => Promise<boolean>
+  onCompleteTakeaway?: (id: string, options?: { paymentMethod?: 'cash' | 'card' | 'apple-pay'; counterNotes?: string }) => Promise<boolean>
   onForwardToChef?: (order: Order) => void
   currentUser: AdminUser
   busy?: boolean
@@ -50,6 +51,7 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
   const [actionError, setActionError] = useState('')
   const [actionBusy, setActionBusy] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [takeawaySettlementOrder, setTakeawaySettlementOrder] = useState<Order | null>(null)
 
   const canManage = currentUser.permissions.includes('orders:update_status')
   const canDeliver = currentUser.permissions.includes('deliveries:update_status')
@@ -398,13 +400,28 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
                       {/* Payment & Total */}
                       <td className="px-4 py-3.5">
                         <span className="font-bold text-stone-900 text-sm block">€{order.totalAmount.toFixed(2)}</span>
-                        <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[10px] font-bold uppercase ${
-                          order.paymentStatus === 'paid'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}>
-                          {order.paymentStatus} &bull; {order.paymentMethod}
-                        </span>
+                        {order.diningType === 'takeaway' && order.paymentCollectedAt ? (
+                          <div className="space-y-0.5">
+                            <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[10px] font-bold uppercase bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              💵 Counter {order.paymentMethod === 'card' ? 'POS' : 'Cash'}
+                            </span>
+                            <span className="text-[10px] text-stone-500 block truncate max-w-[140px]" title={order.counterNotes ? `Staff: ${order.paymentCollectedByName || 'Staff'} · Note: ${order.counterNotes}` : `Staff: ${order.paymentCollectedByName || 'Staff'}`}>
+                              by {order.paymentCollectedByName || 'Staff'}
+                            </span>
+                          </div>
+                        ) : order.diningType === 'takeaway' && order.paymentStatus !== 'paid' ? (
+                          <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[10px] font-bold uppercase bg-amber-50 text-amber-900 border border-amber-300">
+                            ⚠️ Unpaid · Due
+                          </span>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[10px] font-bold uppercase ${
+                            order.paymentStatus === 'paid'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            {order.paymentStatus} &bull; {order.paymentMethod}
+                          </span>
+                        )}
                       </td>
 
                       {/* Status */}
@@ -488,22 +505,26 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
                                 if (order.diningType === 'delivery') {
                                   setSelectedTab('handover')
                                   setSelectedId(order.id)
-                                } else if (order.diningType === 'takeaway' && onCompleteTakeaway) {
-                                  void action(() => onCompleteTakeaway(order.id))
+                                } else if (order.diningType === 'takeaway') {
+                                  setTakeawaySettlementOrder(order)
                                 } else {
                                   void onUpdateOrderStatus(order.id, 'delivered')
                                 }
                               }}
                               className={`rounded-lg px-2.5 py-1 text-xs font-semibold text-white transition cursor-pointer ${
                                 order.diningType === 'takeaway'
-                                  ? 'bg-emerald-700 hover:bg-emerald-800'
+                                  ? order.paymentStatus === 'paid'
+                                    ? 'bg-emerald-700 hover:bg-emerald-800'
+                                    : 'bg-amber-600 hover:bg-amber-700'
                                   : 'bg-stone-900 hover:bg-stone-800'
                               }`}
                             >
                               {order.diningType === 'delivery'
                                 ? 'Kitchen handover & bag ticket'
                                 : order.diningType === 'takeaway'
-                                ? `Handover & Complete (#${order.pickupCode || 'TK'})`
+                                ? order.paymentStatus === 'paid'
+                                  ? `Handover (#${order.pickupCode || 'TK'})`
+                                  : `Settle & Handover (#${order.pickupCode || 'TK'})`
                                 : 'Confirm Handover'}
                             </button>
                           )}
@@ -608,9 +629,19 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
 
                 {/* Financials & Courier */}
                 <div className="flex flex-wrap items-center justify-between text-xs pt-1 border-t border-stone-100 gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-sm text-[#1C1917]">€{order.totalAmount.toFixed(2)}</span>
-                    <span className="text-stone-500">Payment: {order.paymentMethod} / {order.paymentStatus}</span>
+                    {order.diningType === 'takeaway' && order.paymentCollectedAt ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200" title={order.counterNotes ? `Staff: ${order.paymentCollectedByName || 'Staff'} · Note: ${order.counterNotes}` : `Staff: ${order.paymentCollectedByName || 'Staff'}`}>
+                        💵 Counter {order.paymentMethod === 'card' ? 'POS' : 'Cash'} · {order.paymentCollectedByName || 'Staff'}
+                      </span>
+                    ) : order.diningType === 'takeaway' && order.paymentStatus !== 'paid' ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">
+                        ⚠️ Due at Counter
+                      </span>
+                    ) : (
+                      <span className="text-stone-500">Payment: {order.paymentMethod} / {order.paymentStatus}</span>
+                    )}
                   </div>
                   {order.diningType === 'delivery' && (
                     <span className="text-stone-600 font-medium">
@@ -679,15 +710,17 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
                       type="button"
                       className={`rounded-lg px-3 py-1.5 font-semibold text-white transition cursor-pointer ${
                         order.diningType === 'takeaway'
-                          ? 'bg-emerald-700 hover:bg-emerald-800'
+                          ? order.paymentStatus === 'paid'
+                            ? 'bg-emerald-700 hover:bg-emerald-800'
+                            : 'bg-amber-600 hover:bg-amber-700'
                           : 'bg-stone-900 hover:bg-stone-800'
                       }`}
                       onClick={() => {
                         if (order.diningType === 'delivery') {
                           setSelectedTab('handover')
                           setSelectedId(order.id)
-                        } else if (order.diningType === 'takeaway' && onCompleteTakeaway) {
-                          void action(() => onCompleteTakeaway(order.id))
+                        } else if (order.diningType === 'takeaway') {
+                          setTakeawaySettlementOrder(order)
                         } else {
                           void onUpdateOrderStatus(order.id, 'delivered')
                         }
@@ -696,7 +729,9 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
                       {order.diningType === 'delivery'
                         ? 'Kitchen handover & bag ticket'
                         : order.diningType === 'takeaway'
-                        ? `Handover & Complete (#${order.pickupCode || 'TK'})`
+                        ? order.paymentStatus === 'paid'
+                          ? `Handover (#${order.pickupCode || 'TK'})`
+                          : `Settle & Handover (#${order.pickupCode || 'TK'})`
                         : 'Confirm Handover'}
                     </button>
                   )}
@@ -737,6 +772,22 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
         initialTab={selectedTab}
         onClose={() => setSelectedId(null)}
         onUpdateStatus={onUpdateOrderStatus}
+      />
+
+      {/* 7. Takeaway Counter Settlement & Handover Modal */}
+      <TakeawaySettlementModal
+        order={takeawaySettlementOrder}
+        isOpen={Boolean(takeawaySettlementOrder)}
+        onClose={() => setTakeawaySettlementOrder(null)}
+        onConfirm={async (orderId, options) => {
+          if (!onCompleteTakeaway) return
+          const ok = await onCompleteTakeaway(orderId, options)
+          if (ok) {
+            setTakeawaySettlementOrder(null)
+            onReload()
+          }
+        }}
+        busy={busy || actionBusy}
       />
     </div>
   )

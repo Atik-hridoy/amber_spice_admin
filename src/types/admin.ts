@@ -65,6 +65,9 @@ export interface Order {
   scheduledFor?: string | null
   paymentStatus: 'paid' | 'pending' | 'refunded'
   paymentMethod: 'card' | 'cash' | 'apple-pay'
+  paymentCollectedAt?: string | null
+  paymentCollectedByName?: string | null
+  counterNotes?: string
   createdAt: string
   estimatedTimeMinutes: number
   elapsedMinutes: number

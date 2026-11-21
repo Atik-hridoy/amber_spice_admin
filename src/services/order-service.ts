@@ -56,6 +56,9 @@ export function mapOrderFromApi(raw: Record<string, unknown>): Order {
     scheduledFor: raw.scheduledFor ? String(raw.scheduledFor) : null,
     paymentStatus: (raw.paymentStatus as 'paid' | 'pending' | 'refunded') || 'pending',
     paymentMethod: (raw.paymentMethod as 'card' | 'cash' | 'apple-pay') || 'card',
+    paymentCollectedAt: raw.paymentCollectedAt ? String(raw.paymentCollectedAt) : null,
+    paymentCollectedByName: raw.paymentCollectedByName ? String(raw.paymentCollectedByName) : null,
+    counterNotes: raw.counterNotes ? String(raw.counterNotes) : undefined,
     createdAt: String(raw.createdAt || new Date().toISOString()),
     estimatedTimeMinutes: Number(raw.estimatedTimeMinutes) || 35,
     elapsedMinutes: Number(raw.elapsedMinutes) || 0,
@@ -204,10 +207,14 @@ export const orderService = {
     return mapOrderFromApi(raw)
   },
 
-  async completeTakeaway(id: string): Promise<Order> {
+  async completeTakeaway(
+    id: string,
+    options?: { paymentMethod?: 'cash' | 'card' | 'apple-pay'; counterNotes?: string }
+  ): Promise<Order> {
     const raw = await adminRequest<Record<string, unknown>>(`orders/${id}/complete-takeaway/`, {
       method: 'POST',
       requireAuth: true,
+      body: options ? JSON.stringify(options) : undefined,
     })
     return mapOrderFromApi(raw)
   },

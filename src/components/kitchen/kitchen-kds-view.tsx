@@ -17,11 +17,12 @@ import {
 } from 'lucide-react'
 import type { KitchenStation, Order, OrderStatus } from '../../types/admin'
 import { OrderDetailsModal } from './order-details-modal'
+import { TakeawaySettlementModal } from '../orders/takeaway-settlement-modal'
 
 interface KitchenKdsViewProps {
   orders: Order[]
   onUpdateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<boolean>
-  onCompleteTakeaway?: (orderId: string) => Promise<boolean>
+  onCompleteTakeaway?: (orderId: string, options?: { paymentMethod?: 'cash' | 'card' | 'apple-pay'; counterNotes?: string }) => Promise<boolean>
   busy?: boolean
   onReportLowStock?: (alert: {
     ingredientName: string
@@ -46,6 +47,7 @@ export function KitchenKdsView({
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<Order | null>(null)
   const [selectedModalTab, setSelectedModalTab] = useState<'details' | 'slip' | 'handover'>('details')
+  const [takeawaySettlementOrder, setTakeawaySettlementOrder] = useState<Order | null>(null)
 
   // Stock alert modal state (Chef alerts Manager & Staff)
   const [isStockAlertModalOpen, setIsStockAlertModalOpen] = useState(false)
@@ -476,15 +478,17 @@ export function KitchenKdsView({
                                   if (order.diningType === 'delivery') {
                                     setSelectedModalTab('handover')
                                     setSelectedOrderForModal(order)
-                                  } else if (order.diningType === 'takeaway' && onCompleteTakeaway) {
-                                    void onCompleteTakeaway(order.id)
+                                  } else if (order.diningType === 'takeaway') {
+                                    setTakeawaySettlementOrder(order)
                                   } else {
                                     void onUpdateOrderStatus(order.id, 'delivered')
                                   }
                                 }}
                                 className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)] active:scale-95 transition cursor-pointer ${
                                   order.diningType === 'takeaway'
-                                    ? 'bg-emerald-700 hover:bg-emerald-800'
+                                    ? order.paymentStatus === 'paid'
+                                      ? 'bg-emerald-700 hover:bg-emerald-800'
+                                      : 'bg-amber-600 hover:bg-amber-700'
                                     : 'bg-[#B84A22] hover:bg-[#a03e1b]'
                                 }`}
                               >
@@ -493,7 +497,9 @@ export function KitchenKdsView({
                                   {order.diningType === 'delivery'
                                     ? 'Bags & Handover'
                                     : order.diningType === 'takeaway'
-                                    ? `Takeaway Handover (#${order.pickupCode || 'TK'})`
+                                    ? order.paymentStatus === 'paid'
+                                      ? `Takeaway Handover (#${order.pickupCode || 'TK'})`
+                                      : `Settle & Handover (#${order.pickupCode || 'TK'})`
                                     : 'Confirm Handover'}
                                 </span>
                               </button>
@@ -804,15 +810,17 @@ export function KitchenKdsView({
                         if (order.diningType === 'delivery') {
                           setSelectedModalTab('handover')
                           setSelectedOrderForModal(order)
-                        } else if (order.diningType === 'takeaway' && onCompleteTakeaway) {
-                          void onCompleteTakeaway(order.id)
+                        } else if (order.diningType === 'takeaway') {
+                          setTakeawaySettlementOrder(order)
                         } else {
                           void onUpdateOrderStatus(order.id, 'delivered')
                         }
                       }}
                       className={`w-full rounded-lg py-1.5 text-xs font-semibold text-white shadow-2xs active:scale-98 transition cursor-pointer flex items-center justify-center gap-1.5 ${
                         order.diningType === 'takeaway'
-                          ? 'bg-emerald-700 hover:bg-emerald-800'
+                          ? order.paymentStatus === 'paid'
+                            ? 'bg-emerald-700 hover:bg-emerald-800'
+                            : 'bg-amber-600 hover:bg-amber-700'
                           : 'bg-[#B84A22] hover:bg-[#a03e1b]'
                       }`}
                     >
@@ -821,7 +829,9 @@ export function KitchenKdsView({
                         {order.diningType === 'delivery'
                           ? 'Bags & Handover'
                           : order.diningType === 'takeaway'
-                          ? `Takeaway Handover (#${order.pickupCode || 'TK'})`
+                          ? order.paymentStatus === 'paid'
+                            ? `Takeaway Handover (#${order.pickupCode || 'TK'})`
+                            : `Settle & Handover (#${order.pickupCode || 'TK'})`
                           : 'Confirm Handover'}
                       </span>
                     </button>
@@ -950,6 +960,20 @@ export function KitchenKdsView({
           </div>
         </div>
       )}
+      {/* Takeaway Settlement Modal */}
+      <TakeawaySettlementModal
+        order={takeawaySettlementOrder}
+        isOpen={Boolean(takeawaySettlementOrder)}
+        onClose={() => setTakeawaySettlementOrder(null)}
+        onConfirm={async (orderId, options) => {
+          if (!onCompleteTakeaway) return
+          const ok = await onCompleteTakeaway(orderId, options)
+          if (ok) {
+            setTakeawaySettlementOrder(null)
+          }
+        }}
+        busy={busy}
+      />
     </div>
   )
 }

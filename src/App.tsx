@@ -428,11 +428,14 @@ export default function App() {
     }
   }, [currentUser])
 
-  async function handleCompleteTakeaway(id: string) {
+  async function handleCompleteTakeaway(
+    id: string,
+    options?: { paymentMethod?: 'cash' | 'card' | 'apple-pay'; counterNotes?: string }
+  ) {
     setOrderBusy(true)
     setError('')
     try {
-      const saved = await orderService.completeTakeaway(id)
+      const saved = await orderService.completeTakeaway(id, options)
       setOrders((previous) => previous.map((order) => (order.id === saved.id ? saved : order)))
       return true
     } catch (err) {

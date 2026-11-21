@@ -189,6 +189,27 @@ export function OrderDetailsModal({
                   €{order.totalAmount.toFixed(2)}
                 </span>
               </div>
+
+              {/* Takeaway Counter Settlement Trace */}
+              {order.paymentCollectedAt && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 p-3 space-y-1 text-xs">
+                  <div className="flex items-center justify-between font-bold text-emerald-950">
+                    <span>💵 Counter Payment Settled</span>
+                    <span className="uppercase text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                      {order.paymentMethod === 'card' ? 'POS Terminal' : 'Cash Drawer'}
+                    </span>
+                  </div>
+                  <div className="text-emerald-800 flex justify-between text-[11px]">
+                    <span>Collector: <strong>{order.paymentCollectedByName || 'Counter Staff'}</strong></span>
+                    <span>{new Date(order.paymentCollectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  {order.counterNotes && (
+                    <div className="text-[11px] text-emerald-700 italic border-t border-emerald-200/60 pt-1 mt-1">
+                      Note: {order.counterNotes}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             /* Thermal POS Receipt View */
@@ -259,6 +280,25 @@ export function OrderDetailsModal({
                 <p className="text-[10px] text-stone-500 text-center pt-1">
                   {paymentLabel} · {order.paymentStatus.toUpperCase()}
                 </p>
+                {order.paymentCollectedAt && (
+                  <div className="text-[10px] text-stone-700 border-t border-dashed border-stone-300 pt-1.5 text-left space-y-0.5">
+                    <div className="flex justify-between font-bold">
+                      <span>COUNTER SETTLED:</span>
+                      <span className="uppercase">{order.paymentMethod === 'card' ? 'POS TERMINAL' : 'CASH DRAWER'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>STAFF:</span>
+                      <span>{order.paymentCollectedByName || 'STAFF'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>TIME:</span>
+                      <span>{new Date(order.paymentCollectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    {order.counterNotes && (
+                      <div className="truncate">NOTE: {order.counterNotes}</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {order.notes && (
