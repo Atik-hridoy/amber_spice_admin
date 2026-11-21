@@ -17,7 +17,7 @@ export interface ToastItem {
   id: string
   title: string
   message: string
-  type: 'order_created' | 'order_status' | 'kitchen_ticket' | 'stock_alert' | 'customer_arrived'
+  type: 'order_created' | 'order_status' | 'kitchen_ticket' | 'stock_alert' | 'customer_arrived' | 'reservation_created'
   orderId?: string
   orderNumber?: string
   pickupCode?: string

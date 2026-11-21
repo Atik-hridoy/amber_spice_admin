@@ -1,20 +1,144 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { adminRequest } from '../../services/api-client'
+import { listRecords } from '../../services/resource-service'
 import { ResourcePanel, type ResourceField } from '../common/resource-panel'
+import { TablesView } from '../tables/tables-view'
+import type { TableItem } from '../../types/admin'
 
 const fields = (definitions: [string, string, ResourceField['type']?, boolean?, string[]?][]): ResourceField[] => definitions.map(([key, label, type, required, options]) => ({ key, label, type, required, options, defaultValue: ['isActive', 'is_active', 'ordering_enabled'].includes(key) ? true : undefined }))
 const columns = (definitions: [string, string][]) => definitions.map(([key, label]) => ({ key, label }))
 
+function LiveFloorPlanPanel() {
+  const [tables, setTables] = useState<TableItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const loadTables = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await listRecords<TableItem>('reservations/tables/')
+      setTables(data)
+      setError('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load floor plan.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadTables()
+  }, [loadTables])
+
+  const handleUpdateStatus = async (tableId: string, status: 'available' | 'occupied' | 'reserved') => {
+    try {
+      await adminRequest(`reservations/tables/${tableId}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
+      await loadTables()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update table status')
+    }
+  }
+
+  if (loading) {
+    return <div className="p-8 text-center text-xs text-stone-500">Loading live restaurant floor plan...</div>
+  }
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-sm font-semibold text-red-600">{error}</p>
+        <button onClick={loadTables} className="mt-2 text-xs font-bold text-[#B84A22] underline cursor-pointer">
+          Retry floor plan
+        </button>
+      </div>
+    )
+  }
+
+  return <TablesView tables={tables} onUpdateTableStatus={handleUpdateStatus} />
+}
+
 export function TablesBookingsView() {
-  return <div className="space-y-10">
-    <ResourcePanel title="Tables" endpoint="reservations/tables/" canCreate fields={fields([
-      ['number', 'Table number', 'text', true], ['capacity', 'Seats', 'number', true], ['status', 'Status', 'select', true, ['available', 'occupied', 'reserved']], ['guestName', 'Guest name'], ['timeSlot', 'Time slot'],
-    ])} columns={columns([['number', 'Table'], ['capacity', 'Seats'], ['status', 'Status'], ['guestName', 'Guest'], ['currentOrder', 'Current order']])} />
-    <ResourcePanel title="Reservations" endpoint="reservations/bookings/" canCreate fields={[
-      ...fields([['guestName', 'Guest name', 'text', true], ['guestPhone', 'Phone', 'text', true], ['guestEmail', 'Email', 'email'], ['guestsCount', 'Guests', 'number', true], ['reservationDate', 'Date', 'date', true], ['timeSlot', 'Time', 'time', true], ['specialRequests', 'Special requests', 'textarea'], ['status', 'Status', 'select', true, ['pending', 'confirmed', 'cancelled', 'completed']]]),
-      { key: 'table', label: 'Table', source: { endpoint: 'reservations/tables/', label: 'number' } },
-    ]} columns={columns([['booking_reference', 'Booking reference'], ['guestName', 'Guest'], ['guestsCount', 'Guests'], ['reservationDate', 'Date'], ['timeSlot', 'Time'], ['status', 'Status'], ['table', 'Table ID']])} />
-  </div>
+  const [tab, setTab] = useState<'floor' | 'reservations' | 'tables'>('floor')
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2 border-b border-stone-200 pb-3">
+        {[
+          { id: 'floor', label: '🍽️ Live Floor Plan & Seating' },
+          { id: 'reservations', label: '📅 Reservations & Bookings' },
+          { id: 'tables', label: '🪑 Table Directory & Settings' },
+        ].map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id as 'floor' | 'reservations' | 'tables')}
+            className={`rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+              tab === t.id
+                ? 'bg-stone-900 text-white shadow-xs'
+                : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'floor' && <LiveFloorPlanPanel />}
+      {tab === 'reservations' && (
+        <ResourcePanel
+          title="Reservations"
+          endpoint="reservations/bookings/"
+          canCreate
+          fields={[
+            ...fields([
+              ['guestName', 'Guest name', 'text', true],
+              ['guestPhone', 'Phone', 'text', true],
+              ['guestEmail', 'Email', 'email'],
+              ['guestsCount', 'Guests', 'number', true],
+              ['reservationDate', 'Date', 'date', true],
+              ['timeSlot', 'Time', 'time', true],
+              ['specialRequests', 'Special requests', 'textarea'],
+              ['status', 'Status', 'select', true, ['pending', 'confirmed', 'cancelled', 'completed']],
+            ]),
+            { key: 'table', label: 'Table', source: { endpoint: 'reservations/tables/', label: 'number' } },
+          ]}
+          columns={columns([
+            ['booking_reference', 'Booking reference'],
+            ['guestName', 'Guest'],
+            ['guestPhone', 'Phone'],
+            ['guestsCount', 'Guests'],
+            ['reservationDate', 'Date'],
+            ['timeSlot', 'Time'],
+            ['status', 'Status'],
+            ['table', 'Table ID'],
+          ])}
+        />
+      )}
+      {tab === 'tables' && (
+        <ResourcePanel
+          title="Tables"
+          endpoint="reservations/tables/"
+          canCreate
+          fields={fields([
+            ['number', 'Table number', 'text', true],
+            ['capacity', 'Seats', 'number', true],
+            ['status', 'Status', 'select', true, ['available', 'occupied', 'reserved']],
+            ['guestName', 'Guest name'],
+            ['timeSlot', 'Time slot'],
+          ])}
+          columns={columns([
+            ['number', 'Table'],
+            ['capacity', 'Seats'],
+            ['status', 'Status'],
+            ['guestName', 'Guest'],
+            ['currentOrder', 'Current order'],
+          ])}
+        />
+      )}
+    </div>
+  )
 }
 
 export function StaffAccountsView() {

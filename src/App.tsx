@@ -320,6 +320,37 @@ export default function App() {
       ])
     })
 
+    const unsubReservationCreated = websocketService.on('reservation.created', (event) => {
+      playOrderAlert()
+      const res = event.reservation || {}
+      const notifData = event.notification || {}
+      const title = String(notifData.title || `Table Reserved: ${res.guestName || 'Guest'}`)
+      const message = String(notifData.message || `${res.guestName} reserved Table ${res.tableNumber || ''} for ${res.guestsCount || 2} guests on ${res.reservationDate} at ${res.timeSlot}`)
+
+      setNotifications((prev) => [
+        {
+          id: Number(notifData.id || Date.now()),
+          type: 'reservation_created',
+          title,
+          message,
+          targetRole: 'admin',
+          createdAt: String(notifData.createdAt || new Date().toISOString()),
+          isRead: false,
+        },
+        ...prev,
+      ])
+
+      setToasts((prev) => [
+        {
+          id: `res-${Date.now()}`,
+          title: `📅 ${title}`,
+          message,
+          type: 'reservation_created',
+        },
+        ...prev,
+      ])
+    })
+
     const unsubStockAlert = websocketService.on('stock.alert', (event) => {
       playStockAlert()
       const alertData = event.alert || {}
@@ -357,6 +388,7 @@ export default function App() {
       unsubKitchenTicket()
       unsubKitchenTicketUpdated()
       unsubCustomerArrived()
+      unsubReservationCreated()
       unsubStockAlert()
       websocketService.disconnect()
     }
