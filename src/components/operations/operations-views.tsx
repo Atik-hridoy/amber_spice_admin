@@ -42,6 +42,21 @@ function LiveFloorPlanPanel() {
     }
   }
 
+  const handleSeatWalkin = async (tableId: string, guestName: string, timeSlot?: string) => {
+    await adminRequest(`reservations/tables/${tableId}/seat_walkin/`, {
+      method: 'POST',
+      body: JSON.stringify({ guestName, timeSlot }),
+    })
+    await loadTables()
+  }
+
+  const handleClearTable = async (tableId: string) => {
+    await adminRequest(`reservations/tables/${tableId}/clear_table/`, {
+      method: 'POST',
+    })
+    await loadTables()
+  }
+
   if (loading) {
     return <div className="p-8 text-center text-xs text-stone-500">Loading live restaurant floor plan...</div>
   }
@@ -56,7 +71,14 @@ function LiveFloorPlanPanel() {
     )
   }
 
-  return <TablesView tables={tables} onUpdateTableStatus={handleUpdateStatus} />
+  return (
+    <TablesView
+      tables={tables}
+      onUpdateTableStatus={handleUpdateStatus}
+      onSeatWalkin={handleSeatWalkin}
+      onClearTable={handleClearTable}
+    />
+  )
 }
 
 export function TablesBookingsView() {

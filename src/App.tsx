@@ -351,6 +351,39 @@ export default function App() {
       ])
     })
 
+    const unsubReservationGuestArrived = websocketService.on('reservation.guest_arrived', (event) => {
+      playCustomerArrivedAlert()
+      const res = event.reservation || {}
+      const notifData = event.notification || {}
+      const title = String(notifData.title || `Dining Guest Arrived: Table ${res.tableNumber || ''}`)
+      const message = String(notifData.message || `${res.guestName} (Party of ${res.guestsCount || 2}) checked in at reception for Table ${res.tableNumber}`)
+
+      setNotifications((prev) => [
+        {
+          id: Number(notifData.id || Date.now()),
+          type: 'customer_arrived',
+          title,
+          message,
+          targetRole: 'admin',
+          createdAt: String(notifData.createdAt || new Date().toISOString()),
+          isRead: false,
+        },
+        ...prev,
+      ])
+
+      setToasts((prev) => [
+        {
+          id: `res-arr-${Date.now()}`,
+          title: `🛎️ ${title}`,
+          message,
+          type: 'customer_arrived',
+          customerName: String(res.guestName || ''),
+          diningType: 'dine-in',
+        },
+        ...prev,
+      ])
+    })
+
     const unsubStockAlert = websocketService.on('stock.alert', (event) => {
       playStockAlert()
       const alertData = event.alert || {}
@@ -389,6 +422,7 @@ export default function App() {
       unsubKitchenTicketUpdated()
       unsubCustomerArrived()
       unsubReservationCreated()
+      unsubReservationGuestArrived()
       unsubStockAlert()
       websocketService.disconnect()
     }
