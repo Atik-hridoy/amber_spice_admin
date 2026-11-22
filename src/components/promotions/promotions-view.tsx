@@ -18,6 +18,15 @@ interface PromotionsViewProps {
   onToggleStatus: (id: string) => void
 }
 
+export const PROMO_IMAGE_PRESETS = [
+  { label: 'Royal Platter', url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Dum Biryani', url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Seafood Boil', url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Charcoal Grill', url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Heritage Curry', url: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Royal Dessert', url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80' },
+]
+
 export function PromotionsView({
   promotions,
   onAddPromotion,
@@ -39,6 +48,8 @@ export function PromotionsView({
   const [minSpend, setMinSpend] = useState(25)
   const [usageLimit, setUsageLimit] = useState(500)
   const [validUntil, setValidUntil] = useState('2026-12-31')
+  const [imageUrl, setImageUrl] = useState(PROMO_IMAGE_PRESETS[0].url)
+  const [firstOrderOnly, setFirstOrderOnly] = useState(false)
 
   const filtered = promotions.filter(
     (p) =>
@@ -57,6 +68,8 @@ export function PromotionsView({
     setMinSpend(25)
     setUsageLimit(500)
     setValidUntil('2026-12-31')
+    setImageUrl(PROMO_IMAGE_PRESETS[0].url)
+    setFirstOrderOnly(false)
     setIsModalOpen(true)
   }
 
@@ -71,6 +84,8 @@ export function PromotionsView({
     setMinSpend(promo.minSpend)
     setUsageLimit(promo.usageLimit)
     setValidUntil(promo.validUntil)
+    setImageUrl(promo.imageUrl || PROMO_IMAGE_PRESETS[0].url)
+    setFirstOrderOnly(Boolean(promo.firstOrderOnly))
     setIsModalOpen(true)
   }
 
@@ -90,6 +105,8 @@ export function PromotionsView({
         minSpend: Number(minSpend),
         usageLimit: Number(usageLimit),
         validUntil,
+        imageUrl: imageUrl.trim(),
+        firstOrderOnly,
       })
     } else {
       onAddPromotion({
@@ -105,6 +122,8 @@ export function PromotionsView({
         usageCount: 0,
         validUntil,
         isActive: true,
+        imageUrl: imageUrl.trim(),
+        firstOrderOnly,
       })
     }
     setIsModalOpen(false)
@@ -362,6 +381,46 @@ export function PromotionsView({
                     className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] p-2.5 text-stone-900 focus:border-[#B84A22] focus:bg-white focus:outline-none"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="font-medium text-stone-700 block mb-1">Food Photography Background</label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {PROMO_IMAGE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => setImageUrl(preset.url)}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition cursor-pointer ${
+                        imageUrl === preset.url
+                          ? 'bg-[#B84A22] text-white border-[#B84A22] font-bold'
+                          : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="Or enter custom image URL (https://...)"
+                  className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] p-2 text-[11px] text-stone-900 focus:border-[#B84A22] focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  id="first-order-toggle"
+                  type="checkbox"
+                  checked={firstOrderOnly}
+                  onChange={(e) => setFirstOrderOnly(e.target.checked)}
+                  className="h-4 w-4 rounded border-stone-300 text-[#B84A22] focus:ring-[#B84A22]"
+                />
+                <label htmlFor="first-order-toggle" className="text-xs font-medium text-stone-700 cursor-pointer">
+                  First-time signed in customers only
+                </label>
               </div>
 
               <div className="mt-5 flex items-center justify-end gap-2 pt-3 border-t border-stone-100">

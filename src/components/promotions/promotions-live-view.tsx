@@ -70,6 +70,8 @@ export function PromotionsLiveView() {
           usageLimit: promo.usageLimit,
           isActive: promo.isActive,
           badge: promo.badge,
+          imageUrl: promo.imageUrl || '',
+          firstOrderOnly: Boolean(promo.firstOrderOnly),
         }),
       })
       await loadPromotions()
@@ -97,6 +99,8 @@ export function PromotionsLiveView() {
           validUntil: promo.validUntil,
           usageLimit: promo.usageLimit,
           badge: promo.badge,
+          imageUrl: promo.imageUrl || '',
+          firstOrderOnly: Boolean(promo.firstOrderOnly),
         }),
       })
       await loadPromotions()
