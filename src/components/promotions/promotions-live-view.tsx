@@ -56,24 +56,45 @@ export function PromotionsLiveView() {
     setActionBusy(true)
     setError('')
     try {
-      await adminRequest('promotions/', {
-        method: 'POST',
-        requireAuth: true,
-        body: JSON.stringify({
-          code: promo.code.trim().toUpperCase(),
-          title: promo.title.trim(),
-          description: promo.description.trim(),
-          discountType: promo.discountType,
-          discountValue: promo.discountValue,
-          minSpend: promo.minSpend,
-          validUntil: promo.validUntil,
-          usageLimit: promo.usageLimit,
-          isActive: promo.isActive,
-          badge: promo.badge,
-          imageUrl: promo.imageUrl || '',
-          firstOrderOnly: Boolean(promo.firstOrderOnly),
-        }),
-      })
+      if (promo.imageFile) {
+        const formData = new FormData()
+        formData.append('code', promo.code.trim().toUpperCase())
+        formData.append('title', promo.title.trim())
+        formData.append('description', promo.description.trim())
+        formData.append('discountType', promo.discountType)
+        formData.append('discountValue', String(promo.discountValue))
+        formData.append('minSpend', String(promo.minSpend))
+        formData.append('validUntil', promo.validUntil)
+        formData.append('usageLimit', String(promo.usageLimit))
+        formData.append('isActive', String(promo.isActive))
+        formData.append('badge', promo.badge)
+        formData.append('firstOrderOnly', String(Boolean(promo.firstOrderOnly)))
+        formData.append('image', promo.imageFile)
+        await adminRequest('promotions/', {
+          method: 'POST',
+          requireAuth: true,
+          body: formData,
+        })
+      } else {
+        await adminRequest('promotions/', {
+          method: 'POST',
+          requireAuth: true,
+          body: JSON.stringify({
+            code: promo.code.trim().toUpperCase(),
+            title: promo.title.trim(),
+            description: promo.description.trim(),
+            discountType: promo.discountType,
+            discountValue: promo.discountValue,
+            minSpend: promo.minSpend,
+            validUntil: promo.validUntil,
+            usageLimit: promo.usageLimit,
+            isActive: promo.isActive,
+            badge: promo.badge,
+            imageUrl: promo.imageUrl || '',
+            firstOrderOnly: Boolean(promo.firstOrderOnly),
+          }),
+        })
+      }
       await loadPromotions()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create promotion voucher.')
@@ -86,23 +107,43 @@ export function PromotionsLiveView() {
     setActionBusy(true)
     setError('')
     try {
-      await adminRequest(`promotions/${promo.id}/`, {
-        method: 'PATCH',
-        requireAuth: true,
-        body: JSON.stringify({
-          code: promo.code.trim().toUpperCase(),
-          title: promo.title.trim(),
-          description: promo.description.trim(),
-          discountType: promo.discountType,
-          discountValue: promo.discountValue,
-          minSpend: promo.minSpend,
-          validUntil: promo.validUntil,
-          usageLimit: promo.usageLimit,
-          badge: promo.badge,
-          imageUrl: promo.imageUrl || '',
-          firstOrderOnly: Boolean(promo.firstOrderOnly),
-        }),
-      })
+      if (promo.imageFile) {
+        const formData = new FormData()
+        formData.append('code', promo.code.trim().toUpperCase())
+        formData.append('title', promo.title.trim())
+        formData.append('description', promo.description.trim())
+        formData.append('discountType', promo.discountType)
+        formData.append('discountValue', String(promo.discountValue))
+        formData.append('minSpend', String(promo.minSpend))
+        formData.append('validUntil', promo.validUntil)
+        formData.append('usageLimit', String(promo.usageLimit))
+        formData.append('badge', promo.badge)
+        formData.append('firstOrderOnly', String(Boolean(promo.firstOrderOnly)))
+        formData.append('image', promo.imageFile)
+        await adminRequest(`promotions/${promo.id}/`, {
+          method: 'PATCH',
+          requireAuth: true,
+          body: formData,
+        })
+      } else {
+        await adminRequest(`promotions/${promo.id}/`, {
+          method: 'PATCH',
+          requireAuth: true,
+          body: JSON.stringify({
+            code: promo.code.trim().toUpperCase(),
+            title: promo.title.trim(),
+            description: promo.description.trim(),
+            discountType: promo.discountType,
+            discountValue: promo.discountValue,
+            minSpend: promo.minSpend,
+            validUntil: promo.validUntil,
+            usageLimit: promo.usageLimit,
+            badge: promo.badge,
+            imageUrl: promo.imageUrl || '',
+            firstOrderOnly: Boolean(promo.firstOrderOnly),
+          }),
+        })
+      }
       await loadPromotions()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update promotion.')

@@ -132,6 +132,7 @@ export interface Promotion {
   badge: string
   firstOrderOnly?: boolean
   imageUrl?: string
+  imageFile?: File | null
 }
 
 export interface TableItem {

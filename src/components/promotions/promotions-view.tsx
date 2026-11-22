@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   Edit2,
+  Image as ImageIcon,
   Plus,
   Search,
   ToggleLeft,
   ToggleRight,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react'
 import type { Promotion } from '../../types/admin'
@@ -49,7 +51,10 @@ export function PromotionsView({
   const [usageLimit, setUsageLimit] = useState(500)
   const [validUntil, setValidUntil] = useState('2026-12-31')
   const [imageUrl, setImageUrl] = useState(PROMO_IMAGE_PRESETS[0].url)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
   const [firstOrderOnly, setFirstOrderOnly] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const filtered = promotions.filter(
     (p) =>
@@ -69,6 +74,8 @@ export function PromotionsView({
     setUsageLimit(500)
     setValidUntil('2026-12-31')
     setImageUrl(PROMO_IMAGE_PRESETS[0].url)
+    setImageFile(null)
+    setImagePreview('')
     setFirstOrderOnly(false)
     setIsModalOpen(true)
   }
@@ -85,8 +92,24 @@ export function PromotionsView({
     setUsageLimit(promo.usageLimit)
     setValidUntil(promo.validUntil)
     setImageUrl(promo.imageUrl || PROMO_IMAGE_PRESETS[0].url)
+    setImageFile(null)
+    setImagePreview('')
     setFirstOrderOnly(Boolean(promo.firstOrderOnly))
     setIsModalOpen(true)
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      setImagePreview(URL.createObjectURL(file))
+    }
+  }
+
+  const handleRemoveFile = () => {
+    setImageFile(null)
+    setImagePreview('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -105,7 +128,8 @@ export function PromotionsView({
         minSpend: Number(minSpend),
         usageLimit: Number(usageLimit),
         validUntil,
-        imageUrl: imageUrl.trim(),
+        imageUrl: imageFile ? '' : imageUrl.trim(),
+        imageFile: imageFile || null,
         firstOrderOnly,
       })
     } else {
@@ -122,7 +146,8 @@ export function PromotionsView({
         usageCount: 0,
         validUntil,
         isActive: true,
-        imageUrl: imageUrl.trim(),
+        imageUrl: imageFile ? '' : imageUrl.trim(),
+        imageFile: imageFile || null,
         firstOrderOnly,
       })
     }
@@ -176,6 +201,7 @@ export function PromotionsView({
           <table className="w-full text-left text-xs">
             <thead className="border-b border-stone-200 bg-stone-50 text-[11px] font-bold tracking-wider text-stone-500 uppercase">
               <tr>
+                <th className="px-5 py-3.5">Card Background</th>
                 <th className="px-5 py-3.5">Coupon Code</th>
                 <th className="px-5 py-3.5">Campaign Title</th>
                 <th className="px-5 py-3.5">Benefit</th>
@@ -189,6 +215,20 @@ export function PromotionsView({
             <tbody className="divide-y divide-stone-100">
               {filtered.map((promo) => (
                 <tr key={promo.id} className="hover:bg-stone-50/70 transition">
+                  <td className="px-5 py-4">
+                    {promo.imageUrl ? (
+                      <img
+                        src={promo.imageUrl}
+                        alt={promo.title}
+                        className="h-10 w-16 object-cover rounded-lg border border-stone-200 shadow-2xs"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-16 items-center justify-center rounded-lg bg-stone-100 text-stone-400 border border-stone-200">
+                        <ImageIcon className="h-4 w-4" />
+                      </div>
+                    )}
+                  </td>
+
                   <td className="px-5 py-4">
                     <span className="font-mono text-xs font-bold text-stone-900 bg-stone-100 px-2 py-1 rounded-md border border-stone-200">
                       {promo.code}
@@ -385,29 +425,85 @@ export function PromotionsView({
 
               <div>
                 <label className="font-medium text-stone-700 block mb-1">Food Photography Background</label>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {PROMO_IMAGE_PRESETS.map((preset) => (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => setImageUrl(preset.url)}
-                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition cursor-pointer ${
-                        imageUrl === preset.url
-                          ? 'bg-[#B84A22] text-white border-[#B84A22] font-bold'
-                          : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
+
+                {/* File Upload Option */}
+                <div className="mb-2.5 rounded-xl border border-dashed border-stone-300 bg-stone-50/70 p-3 text-center">
+                  {imagePreview ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={imagePreview}
+                        alt="Upload preview"
+                        className="h-20 w-36 object-cover rounded-lg border border-stone-200 shadow-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow-xs hover:bg-red-700 transition cursor-pointer"
+                        title="Remove uploaded image"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      <p className="text-[10px] text-stone-500 mt-1 truncate max-w-[144px]">
+                        {imageFile?.name}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="promo-file-upload"
+                      />
+                      <label
+                        htmlFor="promo-file-upload"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-700 shadow-2xs hover:bg-stone-50 hover:border-[#B84A22] transition cursor-pointer"
+                      >
+                        <Upload className="h-3.5 w-3.5 text-[#B84A22]" />
+                        <span>Upload Image File from Device</span>
+                      </label>
+                      <p className="text-[10px] text-stone-400 mt-1">PNG, JPG or WebP up to 5 MB</p>
+                    </div>
+                  )}
                 </div>
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Or enter custom image URL (https://...)"
-                  className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] p-2 text-[11px] text-stone-900 focus:border-[#B84A22] focus:bg-white focus:outline-none"
-                />
+
+                {!imageFile && (
+                  <>
+                    <div className="text-[11px] font-medium text-stone-500 mb-1 flex items-center gap-1">
+                      <ImageIcon className="h-3 w-3" />
+                      <span>Or pick a curated restaurant background:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {PROMO_IMAGE_PRESETS.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => {
+                            setImageUrl(preset.url)
+                            setImageFile(null)
+                            setImagePreview('')
+                          }}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg border transition cursor-pointer ${
+                            imageUrl === preset.url && !imageFile
+                              ? 'bg-[#B84A22] text-white border-[#B84A22] font-bold'
+                              : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="url"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="Or enter custom image URL (https://...)"
+                      className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] p-2 text-[11px] text-stone-900 focus:border-[#B84A22] focus:bg-white focus:outline-none"
+                    />
+                  </>
+                )}
               </div>
 
               <div className="flex items-center gap-2 pt-1">
