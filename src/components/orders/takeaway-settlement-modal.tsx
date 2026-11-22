@@ -161,6 +161,12 @@ export function TakeawaySettlementModal({
                 </div>
               ))}
             </div>
+            {(order.couponCode || order.discountAmount > 0) && (
+              <div className="pt-2 border-t border-stone-200 flex items-center justify-between text-xs text-purple-700 bg-purple-50/80 px-2.5 py-1.5 rounded-lg border border-purple-200 font-semibold mb-1">
+                <span>🏷️ Applied Voucher ({order.couponCode || 'PROMO'})</span>
+                <span>−€{order.discountAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="pt-2 border-t border-stone-200 flex items-center justify-between font-bold text-sm text-stone-900">
               <span>Total Balance</span>
               <span className="text-base text-[#B84A22] font-black">€{order.totalAmount.toFixed(2)}</span>

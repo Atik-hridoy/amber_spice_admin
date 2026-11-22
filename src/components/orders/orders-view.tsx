@@ -400,6 +400,13 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
                       {/* Payment & Total */}
                       <td className="px-4 py-3.5">
                         <span className="font-bold text-stone-900 text-sm block">€{order.totalAmount.toFixed(2)}</span>
+                        {(order.couponCode || order.discountAmount > 0) && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200" title={`Code: ${order.couponCode || 'PROMO'} (-€${order.discountAmount.toFixed(2)})`}>
+                              🏷️ {order.couponCode || 'PROMO'} (−€{order.discountAmount.toFixed(2)})
+                            </span>
+                          </div>
+                        )}
                         {order.diningType === 'takeaway' && order.paymentCollectedAt ? (
                           <div className="space-y-0.5">
                             <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[10px] font-bold uppercase bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -631,6 +638,11 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
                 <div className="flex flex-wrap items-center justify-between text-xs pt-1 border-t border-stone-100 gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-sm text-[#1C1917]">€{order.totalAmount.toFixed(2)}</span>
+                    {(order.couponCode || order.discountAmount > 0) && (
+                      <span className="inline-flex items-center gap-1 rounded bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 border border-purple-200">
+                        🏷️ {order.couponCode || 'PROMO'} (−€{order.discountAmount.toFixed(2)})
+                      </span>
+                    )}
                     {order.diningType === 'takeaway' && order.paymentCollectedAt ? (
                       <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200" title={order.counterNotes ? `Staff: ${order.paymentCollectedByName || 'Staff'} · Note: ${order.counterNotes}` : `Staff: ${order.paymentCollectedByName || 'Staff'}`}>
                         💵 Counter {order.paymentMethod === 'card' ? 'POS' : 'Cash'} · {order.paymentCollectedByName || 'Staff'}

@@ -180,14 +180,32 @@ export function OrderDetailsModal({
                 </div>
               </div>
 
-              {/* Total Paid Row (Figma node #24057:12487) */}
-              <div className="pt-2 border-t border-[#E7E5E4] flex items-center justify-between">
-                <span className="font-bold text-sm text-[#1C1917]">
-                  Total · {order.paymentStatus} ({paymentLabel})
-                </span>
-                <span className="font-bold text-sm text-[#F15A24]">
-                  €{order.totalAmount.toFixed(2)}
-                </span>
+              {/* Financial Summary */}
+              <div className="pt-2 border-t border-[#E7E5E4] space-y-1.5 text-xs">
+                <div className="flex items-center justify-between text-stone-600">
+                  <span>Subtotal:</span>
+                  <span className="font-semibold text-stone-900">€{order.subtotal.toFixed(2)}</span>
+                </div>
+                {(order.couponCode || order.discountAmount > 0) && (
+                  <div className="flex items-center justify-between text-purple-700 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200 font-semibold">
+                    <span>🏷️ Promo Voucher ({order.couponCode || 'APPLIED'})</span>
+                    <span>−€{order.discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {order.diningType === 'delivery' && (
+                  <div className="flex items-center justify-between text-stone-600">
+                    <span>Delivery Fee:</span>
+                    <span className="font-semibold text-stone-900">€{order.deliveryFee.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="pt-1.5 border-t border-[#E7E5E4] flex items-center justify-between">
+                  <span className="font-bold text-sm text-[#1C1917]">
+                    Total · {order.paymentStatus} ({paymentLabel})
+                  </span>
+                  <span className="font-bold text-sm text-[#F15A24]">
+                    €{order.totalAmount.toFixed(2)}
+                  </span>
+                </div>
               </div>
 
               {/* Takeaway Counter Settlement Trace */}
