@@ -12,10 +12,10 @@ import {
   AnalyticsLiveView,
   ContentManagementView,
   CustomersDirectoryView,
-  PromotionsLiveView,
   StaffAccountsView,
   TablesBookingsView,
 } from './components/operations/operations-views'
+import { PromotionsLiveView } from './components/promotions/promotions-live-view'
 import { AccountView } from './components/operations/account-view'
 import type { AdminUser, AdminView, InventoryItem, Order, OrderStatus, SystemAlert } from './types/admin'
 import { getAllowedViews, getDefaultViewForRole, isViewAllowed } from './utils/roles'

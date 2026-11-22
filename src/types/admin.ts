@@ -130,6 +130,8 @@ export interface Promotion {
   usageCount: number
   isActive: boolean
   badge: string
+  firstOrderOnly?: boolean
+  imageUrl?: string
 }
 
 export interface TableItem {
