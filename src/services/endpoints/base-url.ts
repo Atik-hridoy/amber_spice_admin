@@ -8,8 +8,8 @@ import { AdminApiError } from '../api-error'
 // Base URL for Django REST API (e.g. 'http://127.0.0.1:8000/api/v1')
 export const ADMIN_API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
-  (typeof window !== 'undefined' && window.location.hostname.includes('innovationark.co')
-    ? 'https://spiceadmin.innovationark.co/api/v1'
+  (typeof window !== 'undefined' && (window.location.hostname.includes('amberspice.ie') || window.location.hostname.includes('innovationark.co'))
+    ? 'https://api.amberspice.ie/api/v1'
     : 'http://127.0.0.1:8000/api/v1')
 ).replace(/\/+$/, '')
 
