@@ -42,7 +42,9 @@ export function KitchenKdsView({
 }: KitchenKdsViewProps) {
   const [selectedStation, setSelectedStation] = useState<KitchenStation>('all')
   const [selectedServiceType, setSelectedServiceType] = useState<'all' | 'dine-in' | 'delivery' | 'takeaway'>('all')
-  const [viewMode, setViewMode] = useState<'table' | 'board'>('table')
+  const [viewMode, setViewMode] = useState<'table' | 'board'>(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'board' : 'table'
+  )
   const [stageFilter, setStageFilter] = useState<'all' | 'pending' | 'preparing' | 'ready'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrderForModal, setSelectedOrderForModal] = useState<Order | null>(null)
@@ -151,9 +153,9 @@ export function KitchenKdsView({
         </div>
 
         {/* Right Segmented Controls (Figma node #24057:4475) */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap w-full xl:w-auto">
           {/* Station Segment (Figma node #24057:4476) */}
-          <div className="h-10 rounded-xl bg-[#F5F5F4]/80 border border-[#E7E5E4]/60 p-1 flex items-center gap-1">
+          <div className="h-10 rounded-xl bg-[#F5F5F4]/80 border border-[#E7E5E4]/60 p-1 flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full">
             {(
               [
                 { id: 'all', label: 'All Stations' },
@@ -169,7 +171,7 @@ export function KitchenKdsView({
                   key={st.id}
                   type="button"
                   onClick={() => setSelectedStation(st.id)}
-                  className={`h-8 rounded-lg px-2.5 sm:px-3 text-xs transition cursor-pointer ${
+                  className={`h-8 rounded-lg px-2.5 sm:px-3 text-xs whitespace-nowrap shrink-0 transition cursor-pointer ${
                     isActive
                       ? 'bg-white text-[#1C1917] font-semibold border border-[#E7E5E4]/60 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]'
                       : 'text-[#78716C] font-medium hover:text-[#1C1917]'
@@ -182,7 +184,7 @@ export function KitchenKdsView({
           </div>
 
           {/* Service Type Segment (Figma node #24057:4488) */}
-          <div className="h-10 rounded-xl bg-[#F5F5F4]/80 border border-[#E7E5E4]/60 p-1 flex items-center gap-1">
+          <div className="h-10 rounded-xl bg-[#F5F5F4]/80 border border-[#E7E5E4]/60 p-1 flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full">
             {(
               [
                 { id: 'all', label: 'All' },
@@ -197,7 +199,7 @@ export function KitchenKdsView({
                   key={type.id}
                   type="button"
                   onClick={() => setSelectedServiceType(type.id)}
-                  className={`h-8 rounded-lg px-2.5 sm:px-3 text-xs transition cursor-pointer ${
+                  className={`h-8 rounded-lg px-2.5 sm:px-3 text-xs whitespace-nowrap shrink-0 transition cursor-pointer ${
                     isActive
                       ? 'bg-white text-[#1C1917] font-semibold border border-[#E7E5E4]/60 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]'
                       : 'text-[#78716C] font-medium hover:text-[#1C1917]'

@@ -70,7 +70,7 @@ export function ToastStack({
   return (
     <div
       aria-live="polite"
-      className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2.5 max-w-sm sm:max-w-md w-full pointer-events-none"
+      className="fixed bottom-20 left-3 right-3 sm:left-auto sm:right-4 lg:bottom-4 z-50 flex flex-col items-end gap-2.5 sm:max-w-md sm:w-full pointer-events-none"
     >
       {/* High-volume rush header control bar */}
       <div className="flex items-center justify-between gap-2 rounded-xl bg-stone-900/90 backdrop-blur-md px-3 py-1.5 text-xs text-white shadow-xl pointer-events-auto w-full max-w-sm sm:max-w-md border border-stone-700/80">

@@ -36,11 +36,11 @@ export function CustomersView({
     <div className="space-y-6">
       {/* Top Navigation Sub-Tabs */}
       <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full">
           <button
             type="button"
             onClick={() => setActiveTab('directory')}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer ${
               activeTab === 'directory'
                 ? 'bg-stone-900 text-white shadow-2xs'
                 : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -53,7 +53,7 @@ export function CustomersView({
           <button
             type="button"
             onClick={() => setActiveTab('inquiries')}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer ${
               activeTab === 'inquiries'
                 ? 'bg-stone-900 text-white shadow-2xs'
                 : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
@@ -95,8 +95,44 @@ export function CustomersView({
             </button>
           </div>
 
-          {/* Table */}
-          <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-2xs">
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {filtered.map((customer) => (
+              <div
+                key={customer.id}
+                className="rounded-2xl border border-stone-200/80 bg-white p-4 shadow-2xs space-y-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-stone-100 font-bold text-stone-700 text-sm">
+                      {customer.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-stone-900 truncate">{customer.name}</p>
+                      <p className="text-[11px] text-stone-500 truncate">{customer.email}</p>
+                    </div>
+                  </div>
+                  {customer.isVip ? (
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                      <Crown className="h-3 w-3 text-amber-500" />
+                      <span>VIP</span>
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-semibold text-stone-600">
+                      Guest
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between border-t border-stone-100 pt-2.5 text-xs">
+                  <span className="text-stone-500">{customer.ordersCount} Orders • {customer.lastOrderDate}</span>
+                  <span className="font-mono font-bold text-[#B84A22]">€{customer.totalSpent.toFixed(2)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="border-b border-stone-200 bg-stone-50 text-[11px] font-bold tracking-wider text-stone-500 uppercase">

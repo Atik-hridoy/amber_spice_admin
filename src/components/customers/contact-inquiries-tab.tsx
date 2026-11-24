@@ -159,15 +159,15 @@ export function ContactInquiriesTab({
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {/* Status filter tabs */}
-          <div className="flex items-center rounded-xl bg-stone-100 p-1 text-xs">
+          <div className="flex items-center rounded-xl bg-stone-100 p-1 text-xs shrink-0">
             {(['all', 'new', 'read', 'resolved'] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setStatusFilter(tab)}
-                className={`rounded-lg px-3 py-1 font-semibold capitalize transition cursor-pointer ${
+                className={`rounded-lg px-3 py-1 font-semibold capitalize whitespace-nowrap transition cursor-pointer ${
                   statusFilter === tab
                     ? 'bg-white text-stone-900 shadow-2xs'
                     : 'text-stone-500 hover:text-stone-900'
@@ -187,7 +187,7 @@ export function ContactInquiriesTab({
           <button
             type="button"
             onClick={() => void loadMessages()}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 transition cursor-pointer"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 transition cursor-pointer"
             title="Refresh Inquiries"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -234,7 +234,109 @@ export function ContactInquiriesTab({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Mobile & Small Tablet Card View */}
+          <div className="md:hidden divide-y divide-stone-100">
+            {filtered.map((item) => {
+              const isNew = item.status === 'new'
+              const isRead = item.status === 'read'
+              const isResolved = item.status === 'resolved'
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    setSelectedMessage(item)
+                    if (isNew) void handleUpdateStatus(item.id, 'read')
+                  }}
+                  className={`p-4 space-y-2.5 cursor-pointer transition hover:bg-stone-50/80 ${
+                    isNew ? 'bg-amber-50/25' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                          isNew
+                            ? 'bg-[#F15A24]/15 text-[#F15A24]'
+                            : 'bg-stone-100 text-stone-700'
+                        }`}
+                      >
+                        {item.fullName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm text-stone-900 truncate">{item.fullName}</p>
+                        <p className="text-[11px] text-stone-500 truncate">{item.email}</p>
+                      </div>
+                    </div>
+                    <span
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
+                        isNew
+                          ? 'bg-amber-500/10 text-amber-700 border-amber-300'
+                          : isRead
+                          ? 'bg-blue-500/10 text-blue-700 border-blue-200'
+                          : 'bg-emerald-500/10 text-emerald-700 border-emerald-200'
+                      }`}
+                    >
+                      {isNew ? '● New' : isRead ? 'Read' : '✓ Resolved'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p className="font-bold text-xs text-stone-900">{item.subject}</p>
+                    <p className="text-xs text-stone-600 line-clamp-2 mt-0.5">{item.message}</p>
+                  </div>
+
+                  <div
+                    className="flex items-center justify-between pt-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="flex items-center gap-1 text-[11px] text-stone-400">
+                      <Clock className="h-3 w-3" />
+                      {new Date(item.createdAt || item.created_at || '').toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMessage(item)
+                          if (isNew) void handleUpdateStatus(item.id, 'read')
+                        }}
+                        className="rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-700"
+                      >
+                        View
+                      </button>
+                      {!isResolved && (
+                        <button
+                          type="button"
+                          disabled={actionBusyId === item.id}
+                          onClick={() => void handleUpdateStatus(item.id, 'resolved')}
+                          className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:opacity-50"
+                        >
+                          Resolve
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        disabled={actionBusyId === item.id}
+                        onClick={() => void handleDelete(item.id)}
+                        className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg"
+                        title="Delete inquiry"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-stone-200 bg-stone-50 text-[11px] font-bold tracking-wider text-stone-500 uppercase">
                 <tr>
@@ -381,13 +483,14 @@ export function ContactInquiriesTab({
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
       {/* Message Detail & Reply Modal */}
       {selectedMessage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="w-full max-w-xl rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
+          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-2xl animate-scale-in">
             {/* Header */}
             <div className="flex items-start justify-between border-b border-stone-100 pb-4">
               <div>

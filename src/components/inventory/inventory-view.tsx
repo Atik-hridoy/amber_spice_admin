@@ -285,12 +285,12 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
   return (
     <div className="space-y-6">
       {/* Sub-Tab Navigation Header */}
-      <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-3">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveSubTab('items')}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer ${
               activeSubTab === 'items'
                 ? 'bg-stone-900 text-white shadow-xs'
                 : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
@@ -475,8 +475,127 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
             </div>
           </div>
 
-          {/* Inventory Table */}
-          <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-2xs">
+          {/* Mobile Inventory Cards */}
+          <div className="md:hidden space-y-3">
+            {isLoadingItems && items.length === 0 ? (
+              <div className="rounded-2xl border border-stone-200 bg-white p-10 text-center text-xs text-stone-400">
+                <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-[#B84A22]" />
+                <span>Loading ingredients from kitchen stock...</span>
+              </div>
+            ) : filteredInventory.length === 0 ? (
+              <div className="rounded-2xl border border-stone-200 bg-white p-10 text-center text-xs text-stone-400">
+                <Package className="h-6 w-6 mx-auto mb-2 opacity-40" />
+                <p className="font-semibold text-stone-700">No ingredients found</p>
+              </div>
+            ) : (
+              filteredInventory.map((item) => {
+                const currentVal = Number(item.currentStock) || 0
+                const minVal = Number(item.minimumStock) || 1
+                const percent = Math.min(100, Math.round((currentVal / (minVal * 2)) * 100))
+                const unitCost = Number(item.costPerUnit || 0)
+
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-2xl border border-stone-200/80 bg-white p-4 shadow-2xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-bold text-sm text-stone-900">{item.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-600">
+                            {item.category}
+                          </span>
+                          <span className="text-[11px] font-mono text-stone-500">
+                            €{unitCost.toFixed(2)}/{item.unit}
+                          </span>
+                        </div>
+                      </div>
+                      <span
+                        className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                          item.status === 'optimal'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : item.status === 'low'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : 'bg-red-50 text-red-700 border border-red-200'
+                        }`}
+                      >
+                        <span className="h-1 w-1 rounded-full bg-current" />
+                        {item.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="font-bold text-stone-900">
+                          {item.currentStock} {item.unit}
+                        </span>
+                        <span className="text-[11px] text-stone-400">
+                          Min: {item.minimumStock} {item.unit}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-stone-100 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            item.status === 'optimal'
+                              ? 'bg-emerald-500'
+                              : item.status === 'low'
+                              ? 'bg-amber-500'
+                              : 'bg-red-500'
+                          }`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-stone-100 pt-2.5">
+                      <button
+                        type="button"
+                        onClick={() => handleQuickRestock(item, 20)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-700"
+                      >
+                        <PackagePlus className="h-3.5 w-3.5 text-[#B84A22]" />
+                        <span>+20 {item.unit}</span>
+                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRestockingItem(item)
+                            setRestockAmount(10)
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 text-stone-600"
+                          title="Custom Restock"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(item)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 text-stone-600"
+                          title="Edit"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingItem(item)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 text-stone-600 hover:text-red-600"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+
+          {/* Desktop Inventory Table */}
+          <div className="hidden md:block overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-2xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="border-b border-stone-200 bg-stone-50 text-[11px] font-bold tracking-wider text-stone-500 uppercase">

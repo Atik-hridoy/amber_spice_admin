@@ -41,7 +41,9 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [diningType, setDiningType] = useState('all')
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'cards' : 'table'
+  )
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedTab, setSelectedTab] = useState<'details' | 'handover'>('details')
   const [drivers, setDrivers] = useState<{ id: number; name: string; phone: string; onDuty?: boolean; activeJobs?: number }[]>([])
@@ -195,7 +197,7 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
         {/* Top Filter Row: Dining Type Segment & View Mode Toggle */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Dining Type Segment */}
-          <div className="h-10 rounded-xl bg-[#F5F5F4]/90 border border-[#E7E5E4]/80 p-1 flex items-center gap-1 overflow-x-auto no-scrollbar">
+          <div className="h-10 rounded-xl bg-[#F5F5F4]/90 border border-[#E7E5E4]/80 p-1 flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full">
             {[
               { id: 'all', label: 'All Orders', count: orders.length },
               { id: 'dine-in', label: 'Dine-In', count: orders.filter(o => o.diningType === 'dine-in').length },
@@ -208,7 +210,7 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
                   key={type.id}
                   type="button"
                   onClick={() => setDiningType(type.id)}
-                  className={`h-8 rounded-lg px-3 text-xs flex items-center gap-1.5 transition cursor-pointer ${
+                  className={`h-8 rounded-lg px-3 text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 transition cursor-pointer ${
                     active
                       ? 'bg-white text-[#1C1917] font-semibold border border-[#E7E5E4] shadow-2xs'
                       : 'text-[#78716C] font-medium hover:text-[#1C1917]'

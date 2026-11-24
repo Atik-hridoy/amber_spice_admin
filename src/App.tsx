@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Header } from './components/layout/header'
 import { Sidebar } from './components/layout/sidebar'
+import { MobileAdminBottomNav } from './components/layout/mobile-bottom-nav'
 import { KitchenKdsView } from './components/kitchen/kitchen-kds-view'
 import { OrdersView } from './components/orders/orders-view'
 import { InventoryView } from './components/inventory/inventory-view'
@@ -650,7 +651,7 @@ export default function App() {
           onSettings={() => setActiveView('account')}
           wsConnected={wsConnected}
         />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-24 lg:pb-8 max-w-[1600px] w-full mx-auto">
           {error && (
             <div role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-red-800">
               {error}{' '}
@@ -718,6 +719,18 @@ export default function App() {
           {activeView === 'api-tester' && <ApiTesterView />}
         </main>
       </div>
+
+      {/* Mobile/Tablet Role-Aware Bottom Quick Navigation */}
+      <MobileAdminBottomNav
+        activeView={activeView}
+        onSelectView={(view) => {
+          if (isViewAllowed(view, currentUser)) setActiveView(view)
+        }}
+        onOpenMenu={() => setIsMobileSidebarOpen(true)}
+        currentUser={currentUser}
+        activeKitchenCount={activeKitchenCount}
+        lowStockCount={lowStockCount}
+      />
 
       {/* Floating high-volume real-time toast notification queue */}
       <ToastStack

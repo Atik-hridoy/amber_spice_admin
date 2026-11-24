@@ -76,33 +76,33 @@ export function Header({
   })
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-[#E7E5E4]/90 bg-white px-4 sm:px-6 lg:px-10 backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-[#E7E5E4]/90 bg-white px-3 sm:px-6 lg:px-10 backdrop-blur-md">
       {/* Left: Mobile Toggle & Shift / Role bar */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Mobile menu button */}
         <button
           type="button"
           onClick={onOpenMobileSidebar}
           aria-label="Open sidebar"
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white text-stone-700 hover:bg-stone-50 lg:hidden cursor-pointer"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white text-stone-700 hover:bg-stone-50 lg:hidden cursor-pointer"
         >
           <Menu className="h-4 w-4" />
         </button>
 
         {/* Shift: 10:35 (Figma node #24057:4401) */}
-        <div className="flex items-center gap-1.5 text-xs">
+        <div className="hidden sm:flex items-center gap-1.5 text-xs shrink-0">
           <Clock className="h-3.5 w-3.5 text-[#78716C]" />
           <span className="font-medium text-[#57534E]">Today:</span>
           <span className="font-semibold text-[#1C1917]">{new Date().toLocaleDateString()}</span>
         </div>
 
         {/* Divider | (Figma node #24057:4411) */}
-        <span className="text-[#D6D3D1] font-light text-base select-none">|</span>
+        <span className="hidden sm:inline text-[#D6D3D1] font-light text-base select-none">|</span>
 
         {/* Active Logged Role Indicator */}
-        <div className="flex items-center gap-1.5 rounded-xl border border-[#E7E5E4]/80 bg-[#F5F5F4]/90 py-1 px-3">
-          <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-          <span className="text-[11px] font-bold text-stone-800">
+        <div className="flex items-center gap-1.5 rounded-xl border border-[#E7E5E4]/80 bg-[#F5F5F4]/90 py-1 px-2.5 sm:px-3 min-w-0">
+          <Sparkles className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+          <span className="text-[11px] font-bold text-stone-800 truncate max-w-[115px] sm:max-w-none">
             {currentRoleDisplay}
           </span>
         </div>
@@ -166,7 +166,7 @@ export function Header({
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-88 sm:w-96 rounded-2xl border border-[#E7E5E4] bg-white p-3.5 shadow-2xl z-50">
+            <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-2xl border border-[#E7E5E4] bg-white p-3.5 shadow-2xl z-50">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
                 <div className="flex items-center gap-1.5">
@@ -202,13 +202,13 @@ export function Header({
               </div>
 
               {/* Tabs */}
-              <div className="flex items-center gap-1 border-b border-stone-100 py-2 text-xs">
+              <div className="flex items-center gap-1 border-b border-stone-100 py-2 text-xs overflow-x-auto no-scrollbar">
                 {(['all', 'orders', 'kitchen', 'stock', 'inquiries'] as const).map((tab) => (
                   <button
                     key={tab}
                     type="button"
                     onClick={() => setActiveTab(tab)}
-                    className={`rounded-lg px-2.5 py-1 text-[11px] font-medium capitalize transition cursor-pointer ${
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-medium capitalize shrink-0 transition cursor-pointer ${
                       activeTab === tab
                         ? 'bg-stone-900 text-white font-bold'
                         : 'text-stone-600 hover:bg-stone-100'
