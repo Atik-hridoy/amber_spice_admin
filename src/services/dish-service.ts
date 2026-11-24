@@ -8,7 +8,9 @@ function bodyFor(payload: DishPayload): BodyInit {
   if (!payload.image) return JSON.stringify(payload)
   const body = new FormData()
   for (const [key, value] of Object.entries(payload)) {
-    if (key === 'dietary') body.append(key, JSON.stringify(value))
+    if (['dietary', 'portionOptions', 'extraOptions', 'prepPreferences', 'allergenOptions'].includes(key)) {
+      if (value !== undefined) body.append(key, JSON.stringify(value))
+    }
     else if (value !== undefined && value !== null) body.append(key, value instanceof File ? value : String(value))
   }
   return body

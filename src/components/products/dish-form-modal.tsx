@@ -22,7 +22,9 @@ export function DishFormModal({ dish, categories, initialCategory, isSaving, onC
   const [form, setForm] = useState({
     name: dish?.name || '', category: String(dish?.category || initialCategory || activeCategories[0]?.id || ''),
     price: dish?.price || '', description: dish?.description || '', imageUrl: dish?.imageUrl || '',
-    spicyLevel: dish?.spicyLevel ?? 0, station: dish?.station || 'curry', prepTime: dish?.prepTime || '',
+    spicyLevel: dish?.spicyLevel ?? 0, allowsSpiceLevel: dish?.allowsSpiceLevel ?? true,
+    portionOptions: dish?.portionOptions || [], extraOptions: dish?.extraOptions || [],
+    station: dish?.station || 'curry', prepTime: dish?.prepTime || '',
     dietary: dish?.dietary || [], isAvailable: dish?.isAvailable ?? true,
     isPopular: dish?.isPopular ?? false, isBestseller: dish?.isBestseller ?? false, isSpecial: dish?.isSpecial ?? false,
   })

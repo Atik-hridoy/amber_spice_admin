@@ -1,5 +1,19 @@
 import type { AddedBy } from './menu-category'
 
+export interface DishPortionOption {
+  id?: number
+  name: string
+  servingInfo?: string
+  priceDelta: string | number
+  inventoryMultiplier?: string | number
+}
+
+export interface DishExtraOption {
+  id?: number
+  name: string
+  price: string | number
+}
+
 export interface MenuDish {
   id: number
   name: string
@@ -11,6 +25,11 @@ export interface MenuDish {
   imageUrl: string | null
   station: string
   spicyLevel: number
+  allowsSpiceLevel?: boolean
+  prepPreferences?: string[]
+  allergenOptions?: string[]
+  portionOptions?: DishPortionOption[]
+  extraOptions?: DishExtraOption[]
   rating: number
   ordersCount: number
   isAvailable: boolean
@@ -32,6 +51,11 @@ export interface DishPayload {
   imageUrl?: string | null
   station: string
   spicyLevel: number
+  allowsSpiceLevel?: boolean
+  prepPreferences?: string[]
+  allergenOptions?: string[]
+  portionOptions?: DishPortionOption[]
+  extraOptions?: DishExtraOption[]
   isAvailable: boolean
   isPopular: boolean
   isBestseller: boolean
