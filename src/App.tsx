@@ -490,20 +490,34 @@ export default function App() {
   }
 
   async function markNotificationRead(id: number | string) {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
+    setNotifications((prev) =>
+      prev.map((n) => (String(n.id) === String(id) ? { ...n, isRead: true } : n))
+    )
     try {
       await notificationService.markAsRead(id)
-    } catch {
-      // non-blocking
+    } catch (err) {
+      console.warn('Failed to persist notification read:', err)
     }
   }
 
   async function markAllNotificationsRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    setAlerts((prev) => prev.map((a) => ({ ...a, read: true })))
     try {
-      await notificationService.markAllRead()
-    } catch {
-      // non-blocking
+      await Promise.allSettled([
+        notificationService.markAllRead(),
+        ...alerts
+          .filter((a) => !a.read)
+          .map((a) =>
+            adminRequest(`inventory/alerts/${a.id}/`, {
+              method: 'PATCH',
+              requireAuth: true,
+              body: JSON.stringify({ resolved: true }),
+            })
+          ),
+      ])
+    } catch (err) {
+      console.warn('Failed to mark all notifications as read:', err)
     }
   }
 

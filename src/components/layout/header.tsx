@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   AlertTriangle,
   Bell,
+  Check,
   CheckCircle2,
   ChefHat,
   Clock,
@@ -283,7 +284,7 @@ export function Header({
                           : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
                       }`}
                     >
-                      <div className="flex items-start gap-2.5 min-w-0">
+                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
                         <div
                           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5 ${
                             isOrder
@@ -324,6 +325,20 @@ export function Header({
                           </p>
                         </div>
                       </div>
+
+                      {!notif.isRead && onMarkNotificationRead && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onMarkNotificationRead(notif.id)
+                          }}
+                          className="shrink-0 p-1 text-stone-400 hover:text-[#F15A24] rounded-lg hover:bg-stone-100 transition"
+                          title="Mark as read"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   )
                 })}
