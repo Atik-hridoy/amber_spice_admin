@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ChefHat,
   Flame,
+  Mail,
   ShoppingBag,
   Volume2,
   VolumeX,
@@ -17,7 +18,7 @@ export interface ToastItem {
   id: string
   title: string
   message: string
-  type: 'order_created' | 'order_status' | 'kitchen_ticket' | 'stock_alert' | 'customer_arrived' | 'reservation_created'
+  type: 'order_created' | 'order_status' | 'kitchen_ticket' | 'stock_alert' | 'customer_arrived' | 'reservation_created' | 'contact_message'
   orderId?: string
   orderNumber?: string
   pickupCode?: string
@@ -25,6 +26,7 @@ export interface ToastItem {
   diningType?: string
   totalAmount?: number | string
   itemsCount?: number
+  inquiryId?: string | number
   timestamp?: string
   autoDismissMs?: number
 }
@@ -36,6 +38,7 @@ interface ToastStackProps {
   onViewOrder?: (orderId: string) => void
   onSendToKitchen?: (orderId: string) => void
   onOpenKitchenKds?: () => void
+  onViewInquiry?: (inquiryId?: string | number) => void
 }
 
 const MAX_VISIBLE_TOASTS = 3
@@ -48,6 +51,7 @@ export function ToastStack({
   onViewOrder,
   onSendToKitchen,
   onOpenKitchenKds,
+  onViewInquiry,
 }: ToastStackProps) {
   const [muted, setMuted] = useState(isAudioMuted())
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -122,6 +126,7 @@ export function ToastStack({
             onViewOrder={onViewOrder}
             onSendToKitchen={onSendToKitchen}
             onOpenKitchenKds={onOpenKitchenKds}
+            onViewInquiry={onViewInquiry}
           />
         ))}
       </div>
@@ -138,6 +143,7 @@ function ToastCard({
   onViewOrder,
   onSendToKitchen,
   onOpenKitchenKds,
+  onViewInquiry,
 }: {
   toast: ToastItem
   isHovered: boolean
@@ -147,6 +153,7 @@ function ToastCard({
   onViewOrder?: (orderId: string) => void
   onSendToKitchen?: (orderId: string) => void
   onOpenKitchenKds?: () => void
+  onViewInquiry?: (inquiryId?: string | number) => void
 }) {
   const dismissDuration = toast.autoDismissMs ?? DEFAULT_AUTO_DISMISS_MS
   const [progress, setProgress] = useState(100)
@@ -176,6 +183,7 @@ function ToastCard({
   const isKitchen = toast.type === 'kitchen_ticket'
   const isStock = toast.type === 'stock_alert'
   const isCustomerArrived = toast.type === 'customer_arrived'
+  const isContact = toast.type === 'contact_message'
 
   const borderAccent = isCustomerArrived
     ? 'border-l-4 border-l-emerald-500'
@@ -185,6 +193,8 @@ function ToastCard({
     ? 'border-l-4 border-l-rose-500'
     : isStock
     ? 'border-l-4 border-l-amber-500'
+    : isContact
+    ? 'border-l-4 border-l-sky-500'
     : 'border-l-4 border-l-blue-500'
 
   return (
@@ -206,7 +216,11 @@ function ToastCard({
               ? 'bg-[#F15A24]'
               : isKitchen
               ? 'bg-rose-500'
-              : 'bg-amber-500'
+              : isStock
+              ? 'bg-amber-500'
+              : isContact
+              ? 'bg-sky-500'
+              : 'bg-blue-500'
           }`}
           style={{ width: `${progress}%`, transitionDuration: '50ms' }}
         />
@@ -224,6 +238,8 @@ function ToastCard({
                 ? 'bg-rose-500/10 text-rose-600'
                 : isStock
                 ? 'bg-amber-500/10 text-amber-600'
+                : isContact
+                ? 'bg-sky-500/10 text-sky-600 ring-2 ring-sky-500/20'
                 : 'bg-blue-500/10 text-blue-600'
             }`}
           >
@@ -235,6 +251,8 @@ function ToastCard({
               <ChefHat className="h-4 w-4" />
             ) : isStock ? (
               <AlertTriangle className="h-4 w-4" />
+            ) : isContact ? (
+              <Mail className="h-4 w-4" />
             ) : (
               <CheckCircle2 className="h-4 w-4" />
             )}
@@ -327,6 +345,20 @@ function ToastCard({
           >
             <ChefHat className="h-3.5 w-3.5" />
             <span>Open KDS</span>
+          </button>
+        )}
+
+        {isContact && onViewInquiry && (
+          <button
+            type="button"
+            onClick={() => {
+              onViewInquiry(toast.inquiryId)
+              onDismiss()
+            }}
+            className="flex items-center gap-1 rounded-xl bg-sky-600 px-2.5 py-1 text-xs font-bold text-white shadow-sm hover:bg-sky-700 transition cursor-pointer"
+          >
+            <Mail className="h-3.5 w-3.5" />
+            <span>Open Inquiry</span>
           </button>
         )}
 

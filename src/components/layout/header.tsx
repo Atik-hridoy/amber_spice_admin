@@ -7,6 +7,7 @@ import {
   ChefHat,
   Clock,
   LogOut,
+  Mail,
   Menu,
   RotateCw,
   Search,
@@ -33,6 +34,7 @@ interface HeaderProps {
   onMarkNotificationRead?: (id: number | string) => void
   onMarkAllNotificationsRead?: () => void
   onSelectOrder?: (orderId: string) => void
+  onSelectInquiry?: (inquiryId?: number | string) => void
   onSettings?: () => void
   wsConnected?: boolean
 }
@@ -50,12 +52,13 @@ export function Header({
   onMarkNotificationRead,
   onMarkAllNotificationsRead,
   onSelectOrder,
+  onSelectInquiry,
   onSettings,
   wsConnected = true,
 }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const [activeTab, setActiveTab] = useState<'all' | 'orders' | 'kitchen' | 'stock'>('all')
+  const [activeTab, setActiveTab] = useState<'all' | 'orders' | 'kitchen' | 'stock' | 'inquiries'>('all')
 
   const currentRoleDisplay = currentUser?.roleDisplay || currentUser?.role || ''
 
@@ -68,6 +71,7 @@ export function Header({
     if (activeTab === 'orders') return n.type === 'order_created' || n.type === 'order_status'
     if (activeTab === 'kitchen') return n.type === 'kitchen_alert' || n.type === 'kitchen_ready'
     if (activeTab === 'stock') return n.type === 'stock_alert'
+    if (activeTab === 'inquiries') return n.type === 'contact_message'
     return true
   })
 
@@ -199,7 +203,7 @@ export function Header({
 
               {/* Tabs */}
               <div className="flex items-center gap-1 border-b border-stone-100 py-2 text-xs">
-                {(['all', 'orders', 'kitchen', 'stock'] as const).map((tab) => (
+                {(['all', 'orders', 'kitchen', 'stock', 'inquiries'] as const).map((tab) => (
                   <button
                     key={tab}
                     type="button"
@@ -265,6 +269,7 @@ export function Header({
                   const isOrder = notif.type === 'order_created'
                   const isKitchen = notif.type === 'kitchen_alert' || notif.type === 'kitchen_ready'
                   const isStock = notif.type === 'stock_alert'
+                  const isContact = notif.type === 'contact_message'
 
                   return (
                     <div
@@ -275,6 +280,9 @@ export function Header({
                         }
                         if (notif.orderId && onSelectOrder) {
                           onSelectOrder(String(notif.orderId))
+                          setShowNotifications(false)
+                        } else if (isContact && onSelectInquiry) {
+                          onSelectInquiry(notif.data?.inquiryId as (number | string) || notif.id)
                           setShowNotifications(false)
                         }
                       }}
@@ -293,6 +301,8 @@ export function Header({
                               ? 'bg-rose-500/10 text-rose-600'
                               : isStock
                               ? 'bg-amber-500/10 text-amber-600'
+                              : isContact
+                              ? 'bg-sky-500/10 text-sky-600'
                               : 'bg-blue-500/10 text-blue-600'
                           }`}
                         >
@@ -300,6 +310,8 @@ export function Header({
                             <ShoppingBag className="h-3.5 w-3.5" />
                           ) : isKitchen ? (
                             <ChefHat className="h-3.5 w-3.5" />
+                          ) : isContact ? (
+                            <Mail className="h-3.5 w-3.5" />
                           ) : (
                             <CheckCircle2 className="h-3.5 w-3.5" />
                           )}

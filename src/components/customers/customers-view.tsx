@@ -1,13 +1,29 @@
-import { useState } from 'react'
-import { Crown, Download, Mail, Phone, Search } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Crown, Download, Mail, MessageSquare, Phone, Search, Users } from 'lucide-react'
 import type { Customer } from '../../types/admin'
+import { ContactInquiriesTab } from './contact-inquiries-tab'
 
 interface CustomersViewProps {
   customers: Customer[]
+  initialTab?: 'directory' | 'inquiries'
+  selectedInquiryId?: number | string | null
+  onClearSelectedInquiry?: () => void
 }
 
-export function CustomersView({ customers }: CustomersViewProps) {
+export function CustomersView({
+  customers,
+  initialTab = 'directory',
+  selectedInquiryId,
+  onClearSelectedInquiry,
+}: CustomersViewProps) {
+  const [activeTab, setActiveTab] = useState<'directory' | 'inquiries'>(initialTab)
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    if (selectedInquiryId) {
+      setActiveTab('inquiries')
+    }
+  }, [selectedInquiryId])
 
   const filtered = customers.filter(
     (c) =>
@@ -18,31 +34,69 @@ export function CustomersView({ customers }: CustomersViewProps) {
 
   return (
     <div className="space-y-6">
-      {/* Top Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-2xs">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by customer name, email or phone..."
-            className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] py-2 pl-10 pr-4 text-xs text-stone-900 placeholder:text-stone-400 focus:border-[#B84A22] focus:bg-white focus:outline-none"
-          />
-        </div>
+      {/* Top Navigation Sub-Tabs */}
+      <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('directory')}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+              activeTab === 'directory'
+                ? 'bg-stone-900 text-white shadow-2xs'
+                : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            <span>Guest Directory ({customers.length})</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => alert('Customer guest list exported as CSV!')}
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer"
-        >
-          <Download className="h-4 w-4 text-stone-500" />
-          <span>Export Guest List</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('inquiries')}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+              activeTab === 'inquiries'
+                ? 'bg-stone-900 text-white shadow-2xs'
+                : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+            }`}
+          >
+            <MessageSquare className="h-4 w-4 text-[#F15A24]" />
+            <span>Website Inquiries & Messages</span>
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-2xs">
+      {activeTab === 'inquiries' ? (
+        <ContactInquiriesTab
+          initialSelectedId={selectedInquiryId}
+          onClearSelectedId={onClearSelectedInquiry}
+        />
+      ) : (
+        <>
+          {/* Top Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-2xs">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by customer name, email or phone..."
+                className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] py-2 pl-10 pr-4 text-xs text-stone-900 placeholder:text-stone-400 focus:border-[#B84A22] focus:bg-white focus:outline-none"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => alert('Customer guest list exported as CSV!')}
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer"
+            >
+              <Download className="h-4 w-4 text-stone-500" />
+              <span>Export Guest List</span>
+            </button>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="border-b border-stone-200 bg-stone-50 text-[11px] font-bold tracking-wider text-stone-500 uppercase">
@@ -108,6 +162,8 @@ export function CustomersView({ customers }: CustomersViewProps) {
           </table>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

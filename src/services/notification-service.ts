@@ -6,7 +6,7 @@ import { adminRequest } from './api-client'
 
 export interface OperationalNotification {
   id: number
-  type: 'order_created' | 'order_status' | 'kitchen_alert' | 'kitchen_ready' | 'stock_alert' | 'reservation_created' | 'customer_arrived' | 'general'
+  type: 'order_created' | 'order_status' | 'kitchen_alert' | 'kitchen_ready' | 'stock_alert' | 'reservation_created' | 'customer_arrived' | 'contact_message' | 'general'
   title: string
   message: string
   targetRole: string

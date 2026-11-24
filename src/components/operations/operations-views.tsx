@@ -176,8 +176,76 @@ export function StaffAccountsView() {
   </div>
 }
 
-export function CustomersDirectoryView() {
-  return <ResourcePanel title="Customers" endpoint="auth/customers/" columns={columns([['name', 'Name'], ['email', 'Email'], ['phone', 'Phone'], ['orders_count', 'Orders'], ['total_spent', 'Paid spend'], ['is_vip', 'VIP'], ['last_order_date', 'Latest order']])} />
+import { ContactInquiriesTab } from '../customers/contact-inquiries-tab'
+import { Mail, Users } from 'lucide-react'
+
+export function CustomersDirectoryView({
+  selectedInquiryId,
+  onClearSelectedInquiry,
+}: {
+  selectedInquiryId?: number | string | null
+  onClearSelectedInquiry?: () => void
+} = {}) {
+  const [subTab, setSubTab] = useState<'directory' | 'inquiries'>(selectedInquiryId ? 'inquiries' : 'directory')
+
+  useEffect(() => {
+    if (selectedInquiryId) {
+      setSubTab('inquiries')
+    }
+  }, [selectedInquiryId])
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
+        <button
+          type="button"
+          onClick={() => setSubTab('directory')}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+            subTab === 'directory'
+              ? 'bg-stone-900 text-white shadow-2xs'
+              : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          <span>Customer Directory</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSubTab('inquiries')}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+            subTab === 'inquiries'
+              ? 'bg-stone-900 text-white shadow-2xs'
+              : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+          }`}
+        >
+          <Mail className="h-4 w-4 text-[#F15A24]" />
+          <span>Website Inquiries & Contact Messages</span>
+        </button>
+      </div>
+
+      {subTab === 'directory' ? (
+        <ResourcePanel
+          title="Customers"
+          endpoint="auth/customers/"
+          columns={columns([
+            ['name', 'Name'],
+            ['email', 'Email'],
+            ['phone', 'Phone'],
+            ['orders_count', 'Orders'],
+            ['total_spent', 'Paid spend'],
+            ['is_vip', 'VIP'],
+            ['last_order_date', 'Latest order'],
+          ])}
+        />
+      ) : (
+        <ContactInquiriesTab
+          initialSelectedId={selectedInquiryId}
+          onClearSelectedId={onClearSelectedInquiry}
+        />
+      )}
+    </div>
+  )
 }
 
 export function PromotionsLiveView() {
@@ -206,7 +274,7 @@ export function ContentManagementView() {
     {tab === 'FAQ' && <ResourcePanel title="FAQ" endpoint="content/faqs/" canCreate fields={fields([['question', 'Question', 'text', true], ['answer', 'Answer', 'textarea', true], ['category', 'Category', 'text', true], ['display_order', 'Display order', 'number', true], ['is_active', 'Visible', 'checkbox']])} columns={columns([['question', 'Question'], ['category', 'Category'], ['answer', 'Answer'], ['is_active', 'Visible']])} />}
     {tab === 'Gallery' && <ResourcePanel title="Gallery" endpoint="content/gallery/" canCreate fields={[...fields([['title', 'Title', 'text', true], ['tag', 'Tag'], ['description', 'Description', 'textarea'], ['category', 'Category', 'select', true, ['Signature Seafood Boils', 'Arabic Charcoal Grills', 'Indian Royal Curries', 'Artisanal Mezze & Chaat', 'Wok & Gourmet Specials']], ['imageUrl', 'Image URL', 'text', true], ['is_active', 'Visible', 'checkbox']]), { key: 'dish', label: 'Linked dish', source: { endpoint: 'menu/dishes/', label: 'name' } }]} columns={columns([['title', 'Title'], ['category', 'Category'], ['imageUrl', 'Image URL'], ['is_active', 'Visible']])} />}
     {tab === 'Reviews' && <ResourcePanel title="Reviews" endpoint="reviews/" fields={fields([['is_approved', 'Approved for public display', 'checkbox'], ['adminReply', 'Owner / Restaurant response', 'textarea']])} columns={columns([['name', 'Customer'], ['rating', 'Rating'], ['dish', 'Dish'], ['comment', 'Comment'], ['adminReply', 'Owner Reply'], ['verified', 'Verified order'], ['is_approved', 'Approved']])} />}
-    {tab === 'Messages' && <ResourcePanel title="Contact messages" endpoint="contact/messages/" fields={fields([['status', 'Status', 'select', true, ['new', 'read', 'resolved']]])} columns={columns([['fullName', 'Name'], ['email', 'Email'], ['subject', 'Subject'], ['message', 'Message'], ['status', 'Status']])} />}
+    {tab === 'Messages' && <ContactInquiriesTab />}
     {tab === 'Subscribers' && <ResourcePanel title="Newsletter subscribers" endpoint="newsletter/" columns={columns([['email', 'Email'], ['consent', 'Consent'], ['created_at', 'Subscribed at']])} />}
     {tab === 'Stock alerts' && <ResourcePanel title="Stock alerts" endpoint="inventory/alerts/" fields={fields([['resolved', 'Resolved', 'checkbox']])} columns={columns([['item_name', 'Ingredient'], ['stock_remaining_percent', 'Reported remaining %'], ['note', 'Note'], ['reporter_name', 'Reporter'], ['resolved', 'Resolved']])} />}
     {tab === 'Wastage' && <ResourcePanel title="Wastage" endpoint="inventory/wastage/" canCreate createFields={[{ key: 'item', label: 'Ingredient', required: true, source: { endpoint: 'inventory/items/', label: 'name' } }, ...fields([['quantity', 'Quantity in stock units', 'number', true], ['reason', 'Reason', 'text', true]])]} columns={columns([['item_name', 'Ingredient'], ['quantity', 'Quantity'], ['reason', 'Reason'], ['created_at', 'Recorded at']])} />}

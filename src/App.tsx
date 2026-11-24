@@ -54,6 +54,7 @@ export default function App() {
   const [orderBusy, setOrderBusy] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [selectedInquiryId, setSelectedInquiryId] = useState<number | string | null>(null)
 
   const activeView =
     currentUser && !isViewAllowed(requestedView, currentUser)
@@ -414,6 +415,39 @@ export default function App() {
       ])
     })
 
+    const unsubContactMessage = websocketService.on('contact.message_created', (event) => {
+      playOrderAlert()
+      const msg = event.message || {}
+      const notifData = event.notification || {}
+      const title = String(notifData.title || `New Inquiry: ${msg.subject || 'Website Message'}`)
+      const message = String(notifData.message || `${msg.fullName || 'Guest'} (${msg.email || ''}): ${msg.message || ''}`)
+
+      setNotifications((prev) => [
+        {
+          id: Number(notifData.id || Date.now()),
+          type: 'contact_message',
+          title,
+          message,
+          targetRole: 'admin',
+          data: { inquiryId: msg.id, ...msg },
+          createdAt: String(notifData.createdAt || new Date().toISOString()),
+          isRead: false,
+        },
+        ...prev,
+      ])
+
+      setToasts((prev) => [
+        {
+          id: `contact-${Date.now()}`,
+          title,
+          message,
+          type: 'contact_message',
+          inquiryId: msg.id ? String(msg.id) : undefined,
+        },
+        ...prev,
+      ])
+    })
+
     return () => {
       unsubStatus()
       unsubOrderCreated()
@@ -424,6 +458,7 @@ export default function App() {
       unsubReservationCreated()
       unsubReservationGuestArrived()
       unsubStockAlert()
+      unsubContactMessage()
       websocketService.disconnect()
     }
   }, [currentUser])
@@ -549,6 +584,13 @@ export default function App() {
     setActiveView('kitchen')
   }
 
+  const handleSelectInquiry = (inquiryId?: number | string) => {
+    if (inquiryId) {
+      setSelectedInquiryId(inquiryId)
+    }
+    setActiveView('customers')
+  }
+
   const logout = () => {
     clearAdminSession()
     setCurrentUser(null)
@@ -604,6 +646,7 @@ export default function App() {
           onMarkNotificationRead={(id) => void markNotificationRead(id)}
           onMarkAllNotificationsRead={() => void markAllNotificationsRead()}
           onSelectOrder={handleViewOrder}
+          onSelectInquiry={handleSelectInquiry}
           onSettings={() => setActiveView('account')}
           wsConnected={wsConnected}
         />
@@ -662,7 +705,12 @@ export default function App() {
           )}
           {activeView === 'products' && <ProductsView currentUser={currentUser} />}
           {activeView === 'promotions' && <PromotionsLiveView />}
-          {activeView === 'customers' && <CustomersDirectoryView />}
+          {activeView === 'customers' && (
+            <CustomersDirectoryView
+              selectedInquiryId={selectedInquiryId}
+              onClearSelectedInquiry={() => setSelectedInquiryId(null)}
+            />
+          )}
           {activeView === 'staff' && <StaffAccountsView />}
           {activeView === 'roles' && <RolesManagementView currentUser={currentUser} />}
           {activeView === 'content' && <ContentManagementView />}
@@ -679,6 +727,7 @@ export default function App() {
         onViewOrder={handleViewOrder}
         onSendToKitchen={handleSendToKitchen}
         onOpenKitchenKds={handleOpenKitchenKds}
+        onViewInquiry={handleSelectInquiry}
       />
     </div>
   )

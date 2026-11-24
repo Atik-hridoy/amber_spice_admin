@@ -17,6 +17,7 @@ export interface WebSocketEventMap {
   'reservation.created': { reservation: Record<string, unknown>; notification?: Record<string, unknown> }
   'reservation.guest_arrived': { reservation: Record<string, unknown>; notification?: Record<string, unknown> }
   'reservation.status_updated': { reservation: Record<string, unknown>; notification?: Record<string, unknown> }
+  'contact.message_created': { message: Record<string, unknown>; notification?: Record<string, unknown> }
   'stock.alert': { alert: Record<string, unknown> }
   'connection.status': { connected: boolean; reconnecting: boolean }
 }
