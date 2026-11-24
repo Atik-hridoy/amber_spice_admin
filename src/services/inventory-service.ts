@@ -16,6 +16,7 @@ export interface InventoryItemPayload {
   categoryRef?: number | null
   currentStock: number | string
   minimumStock: number | string
+  costPerUnit?: number | string
   unit: string
   supplier?: string
 }

@@ -57,6 +57,14 @@ export const API_ENDPOINTS = {
     LOW_STOCK: 'inventory/items/low-stock/',
     restock: (id: number | string) => `inventory/items/${id}/restock/`,
     WASTAGE: 'inventory/wastage/',
+    RECIPES: 'inventory/recipes/',
+    recipesList: (dishId?: number | string) => (dishId ? `inventory/recipes/?dish=${dishId}` : 'inventory/recipes/'),
+    recipeDetail: (id: number | string) => `inventory/recipes/${id}/`,
+    RECIPES_COST_SUMMARY: 'inventory/recipes/cost-summary/',
+    recipeCostSummary: (dishId?: number | string) => (dishId ? `inventory/recipes/cost-summary/?dish=${dishId}` : 'inventory/recipes/cost-summary/'),
+    TRANSACTIONS: 'inventory/transactions/',
+    TRANSACTIONS_SUMMARY: 'inventory/transactions/summary/',
+    TRANSACTIONS_ADJUST: 'inventory/transactions/adjust/',
   },
 
   // Tables & Reservations

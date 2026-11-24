@@ -4,6 +4,8 @@ import {
   AlertTriangle,
   Boxes,
   CheckCircle2,
+  ChefHat,
+  History,
   Package,
   PackagePlus,
   Pencil,
@@ -21,6 +23,8 @@ import { inventoryService, type InventoryItemPayload } from '../../services/inve
 import { adminRequest } from '../../services/api-client'
 import { AdminApiError } from '../../services/api-error'
 import { InventoryCategoriesTab } from './inventory-categories-tab'
+import { DishRecipesTab } from './dish-recipes-tab'
+import { StockTransactionsTab } from './stock-transactions-tab'
 
 interface InventoryViewProps {
   inventory?: InventoryItem[]
@@ -30,7 +34,7 @@ interface InventoryViewProps {
 const COMMON_UNITS = ['kg', 'ltr', 'bags', 'packs', 'bottles', 'cans', 'boxes', 'grams', 'bunches']
 
 export function InventoryView({ inventory: initialInventory, onRestockItem }: InventoryViewProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'items' | 'categories'>('items')
+  const [activeSubTab, setActiveSubTab] = useState<'items' | 'recipes' | 'transactions' | 'categories'>('items')
   const [items, setItems] = useState<InventoryItem[]>(initialInventory || [])
   const [categories, setCategories] = useState<InventoryCategory[]>([])
   const [isLoadingItems, setIsLoadingItems] = useState(true)
@@ -57,6 +61,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
   const [formCategory, setFormCategory] = useState('')
   const [formCurrentStock, setFormCurrentStock] = useState<string>('10')
   const [formMinimumStock, setFormMinimumStock] = useState<string>('5')
+  const [formCostPerUnit, setFormCostPerUnit] = useState<string>('0.00')
   const [formUnit, setFormUnit] = useState<string>('kg')
   const [formSupplier, setFormSupplier] = useState<string>('')
   const [formError, setFormError] = useState<string | null>(null)
@@ -94,6 +99,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
     setFormCategory(categories[0]?.name || 'Pantry')
     setFormCurrentStock('10')
     setFormMinimumStock('5')
+    setFormCostPerUnit('0.00')
     setFormUnit('kg')
     setFormSupplier('')
     setFormError(null)
@@ -107,6 +113,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
     setFormCategory(item.category)
     setFormCurrentStock(String(item.currentStock))
     setFormMinimumStock(String(item.minimumStock))
+    setFormCostPerUnit(item.costPerUnit !== undefined ? String(item.costPerUnit) : '0.00')
     setFormUnit(item.unit || 'kg')
     setFormSupplier(item.supplier || '')
     setFormError(null)
@@ -123,6 +130,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
 
     const currentStockNum = parseFloat(formCurrentStock)
     const minimumStockNum = parseFloat(formMinimumStock)
+    const costPerUnitNum = parseFloat(formCostPerUnit) || 0
     if (isNaN(currentStockNum) || currentStockNum < 0) {
       setFormError('Current stock must be a non-negative number.')
       return
@@ -140,6 +148,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
         category: formCategory || 'Pantry',
         currentStock: currentStockNum,
         minimumStock: minimumStockNum,
+        costPerUnit: costPerUnitNum,
         unit: formUnit || 'kg',
         supplier: formSupplier.trim(),
       }
@@ -170,6 +179,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
 
     const currentStockNum = parseFloat(formCurrentStock)
     const minimumStockNum = parseFloat(formMinimumStock)
+    const costPerUnitNum = parseFloat(formCostPerUnit) || 0
     if (isNaN(currentStockNum) || currentStockNum < 0) {
       setFormError('Current stock must be a non-negative number.')
       return
@@ -187,6 +197,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
         category: formCategory || editingItem.category,
         currentStock: currentStockNum,
         minimumStock: minimumStockNum,
+        costPerUnit: costPerUnitNum,
         unit: formUnit || editingItem.unit,
         supplier: formSupplier.trim(),
       }
@@ -275,7 +286,7 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
     <div className="space-y-6">
       {/* Sub-Tab Navigation Header */}
       <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveSubTab('items')}
@@ -294,6 +305,32 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
             >
               {items.length}
             </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('recipes')}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+              activeSubTab === 'recipes'
+                ? 'bg-stone-900 text-white shadow-xs'
+                : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            <ChefHat className="h-4 w-4" />
+            <span>Dish Recipes & BOM</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('transactions')}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
+              activeSubTab === 'transactions'
+                ? 'bg-stone-900 text-white shadow-xs'
+                : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            <History className="h-4 w-4" />
+            <span>Stock Movements & COGS</span>
           </button>
 
           <button
@@ -342,9 +379,13 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
         )}
       </div>
 
-      {/* CATEGORIES SUB-TAB VIEW */}
+      {/* SUB-TAB VIEWS */}
       {activeSubTab === 'categories' ? (
         <InventoryCategoriesTab onCategoriesUpdated={setCategories} />
+      ) : activeSubTab === 'recipes' ? (
+        <DishRecipesTab inventoryItems={items} onReloadInventory={loadInventoryData} />
+      ) : activeSubTab === 'transactions' ? (
+        <StockTransactionsTab inventoryItems={items} onReloadInventory={loadInventoryData} />
       ) : (
         /* ITEMS SUB-TAB VIEW */
         <div className="space-y-6">
@@ -444,6 +485,8 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
                     <th className="px-5 py-3.5">Category</th>
                     <th className="px-5 py-3.5">Stock Level</th>
                     <th className="px-5 py-3.5">Safety Min</th>
+                    <th className="px-5 py-3.5">Unit Cost</th>
+                    <th className="px-5 py-3.5">Stock Value</th>
                     <th className="px-5 py-3.5">Stock Status</th>
                     <th className="px-5 py-3.5">Supplier</th>
                     <th className="px-5 py-3.5 text-right">Actions</th>
@@ -452,14 +495,14 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
                 <tbody className="divide-y divide-stone-100">
                   {isLoadingItems && items.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center text-stone-400">
+                      <td colSpan={9} className="px-5 py-12 text-center text-stone-400">
                         <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-[#B84A22]" />
                         <span>Loading ingredients from kitchen stock...</span>
                       </td>
                     </tr>
                   ) : filteredInventory.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center text-stone-400">
+                      <td colSpan={9} className="px-5 py-12 text-center text-stone-400">
                         <Package className="h-6 w-6 mx-auto mb-2 opacity-40" />
                         <p className="font-semibold text-stone-700">No ingredients found</p>
                         <p className="text-[11px] mt-0.5">Click "Add Ingredient" to add items to your stock inventory.</p>
@@ -470,6 +513,8 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
                       const currentVal = Number(item.currentStock) || 0
                       const minVal = Number(item.minimumStock) || 1
                       const percent = Math.min(100, Math.round((currentVal / (minVal * 2)) * 100))
+                      const unitCost = Number(item.costPerUnit || 0)
+                      const stockVal = (currentVal * unitCost).toFixed(2)
 
                       return (
                         <tr key={item.id} className="hover:bg-stone-50/70 transition">
@@ -506,8 +551,16 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
                             </div>
                           </td>
 
-                          <td className="px-5 py-4 text-stone-500">
+                          <td className="px-5 py-4 text-stone-500 font-mono">
                             {item.minimumStock} {item.unit}
+                          </td>
+
+                          <td className="px-5 py-4 font-mono font-medium text-stone-700 whitespace-nowrap">
+                            €{unitCost.toFixed(2)} / {item.unit}
+                          </td>
+
+                          <td className="px-5 py-4 font-mono font-bold text-[#8D070D] whitespace-nowrap">
+                            €{stockVal}
                           </td>
 
                           <td className="px-5 py-4">
@@ -700,15 +753,32 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">Supplier (Optional)</label>
-                <input
-                  type="text"
-                  value={formSupplier}
-                  onChange={(e) => setFormSupplier(e.target.value)}
-                  placeholder="e.g. Dublin Wholesalers, Himalayan Mills"
-                  className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] px-3.5 py-2.5 text-xs text-stone-900 placeholder:text-stone-400 focus:border-[#B84A22] focus:bg-white focus:outline-none"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    Cost per Unit (€) <span className="text-stone-400 font-normal">e.g. €/kg</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    value={formCostPerUnit}
+                    onChange={(e) => setFormCostPerUnit(e.target.value)}
+                    placeholder="8.50"
+                    className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] px-3.5 py-2.5 text-xs text-stone-900 focus:border-[#B84A22] focus:bg-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Supplier (Optional)</label>
+                  <input
+                    type="text"
+                    value={formSupplier}
+                    onChange={(e) => setFormSupplier(e.target.value)}
+                    placeholder="e.g. Dublin Wholesalers, Himalayan Mills"
+                    className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] px-3.5 py-2.5 text-xs text-stone-900 placeholder:text-stone-400 focus:border-[#B84A22] focus:bg-white focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-2 border-t border-stone-100 pt-3">
@@ -855,14 +925,30 @@ export function InventoryView({ inventory: initialInventory, onRestockItem }: In
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">Supplier (Optional)</label>
-                <input
-                  type="text"
-                  value={formSupplier}
-                  onChange={(e) => setFormSupplier(e.target.value)}
-                  className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] px-3.5 py-2.5 text-xs text-stone-900 focus:border-[#B84A22] focus:bg-white focus:outline-none"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    Cost per Unit (€) <span className="text-stone-400 font-normal">e.g. €/kg</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    value={formCostPerUnit}
+                    onChange={(e) => setFormCostPerUnit(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] px-3.5 py-2.5 text-xs text-stone-900 focus:border-[#B84A22] focus:bg-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Supplier (Optional)</label>
+                  <input
+                    type="text"
+                    value={formSupplier}
+                    onChange={(e) => setFormSupplier(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-[#FAF9F5] px-3.5 py-2.5 text-xs text-stone-900 focus:border-[#B84A22] focus:bg-white focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-2 border-t border-stone-100 pt-3">
