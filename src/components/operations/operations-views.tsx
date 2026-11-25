@@ -281,11 +281,4 @@ export function ContentManagementView() {
   </div>
 }
 
-interface Summary { totalRevenue: number; todayRevenue: number; totalOrders: number; todayOrders: number; activeKitchenOrders: number; lowStockAlerts: number; tables: { total: number; occupied: number; available: number }; topDishes: { id: number; name: string; orders_count: number }[]; dailySales: { date: string; orders: number; revenue: string }[] }
-export function AnalyticsLiveView() {
-  const [data, setData] = useState<Summary | null>(null)
-  const [error, setError] = useState('')
-  const [retry, setRetry] = useState(0)
-  useEffect(() => { const controller = new AbortController(); setError(''); setData(null); adminRequest<Summary>('analytics/summary/', { requireAuth: true, signal: controller.signal }).then(value => { if (!controller.signal.aborted) setData(value) }).catch(err => { if (!controller.signal.aborted) setError(err.message) }); return () => controller.abort() }, [retry])
-  return <div className="space-y-5"><h1 className="text-2xl font-bold">Analytics</h1><button className="underline" onClick={() => setRetry(value => value + 1)}>Refresh report</button>{error && <div role="alert">{error} <button className="underline" onClick={() => setRetry(value => value + 1)}>Retry</button></div>}{!data && !error && <p role="status">Loading saved sales…</p>}{data && <><div className="grid sm:grid-cols-3 gap-4">{[['Paid revenue today', `€${data.todayRevenue.toFixed(2)}`], ['All paid revenue', `€${data.totalRevenue.toFixed(2)}`], ['Orders today', data.todayOrders], ['All orders', data.totalOrders], ['Active kitchen orders', data.activeKitchenOrders], ['Low stock items', data.lowStockAlerts]].map(([label, value]) => <div className="rounded-2xl border bg-white p-5" key={label}><p className="text-sm text-stone-500">{label}</p><p className="text-2xl font-bold">{value}</p></div>)}</div><p>Tables: {data.tables.occupied} occupied / {data.tables.total} total · {data.tables.available} available</p><div className="rounded-2xl border bg-white p-5"><h2 className="font-bold">Last 7 days</h2>{data.dailySales.map(day => <p key={day.date} className="py-2">{day.date} · {day.orders} orders · €{Number(day.revenue).toFixed(2)}</p>)}</div><div className="rounded-2xl border bg-white p-5"><h2 className="font-bold">Top dishes by saved order count</h2>{data.topDishes.length ? data.topDishes.map(dish => <p key={dish.id} className="py-2">{dish.name} · {dish.orders_count} ordered</p>) : <p>No dish orders yet.</p>}</div></>}</div>
-}
+export { AnalyticsLiveView } from '../analytics/analytics-view'
