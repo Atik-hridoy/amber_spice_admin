@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import type { AdminUser, Order, OrderStatus } from '../../types/admin'
 import { orderService } from '../../services/order-service'
+import { getAdminAccessToken, getAdminRefreshToken } from '../../services/admin-session'
 import { OrderDetailsModal } from '../kitchen/order-details-modal'
 import { CreateOrderForm } from './create-order-form'
 import { DeliveryActivityPanel } from './delivery-activity-panel'
@@ -108,13 +109,24 @@ export function OrdersView({ orders, onUpdateOrderStatus, onCompleteTakeaway, on
 
   if (currentUser.role === 'delivery_staff') {
     const customerSite = (import.meta.env.VITE_CUSTOMER_SITE_URL || 'http://localhost:5173').replace(/\/+$/, '')
+    const access = getAdminAccessToken()
+    const refresh = getAdminRefreshToken()
+    let ssoHash = ''
+    if (access && refresh) {
+      try {
+        const payload = JSON.stringify({ access, refresh, user: currentUser })
+        ssoHash = `#rider-sso=${encodeURIComponent(btoa(unescape(encodeURIComponent(payload))))}`
+      } catch {
+        ssoHash = ''
+      }
+    }
     return (
       <div className="rounded-2xl border border-stone-200 bg-white p-8 space-y-4">
         <h1 className="text-2xl font-bold">Your rider workspace</h1>
         <p className="text-sm text-stone-600">
-          Manage your shift, assigned pickups, doorstep handovers, delivery issues and cash receipts in the rider workspace. Sign in with this same rider account.
+          Manage your shift, assigned pickups, doorstep handovers, delivery issues and cash receipts in the rider workspace. Your active session transfers automatically.
         </p>
-        <a className="inline-block rounded-xl bg-[#B84A22] px-5 py-3 text-sm font-semibold text-white" href={`${customerSite}/rider`}>
+        <a className="inline-block rounded-xl bg-[#B84A22] px-5 py-3 text-sm font-semibold text-white" href={`${customerSite}/rider${ssoHash}`}>
           Open rider workspace
         </a>
       </div>
