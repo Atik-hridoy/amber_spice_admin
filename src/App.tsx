@@ -7,7 +7,6 @@ import { OrdersView } from './components/orders/orders-view'
 import { InventoryView } from './components/inventory/inventory-view'
 import { ProductsView } from './components/products/products-view'
 import { RolesManagementView } from './components/roles/roles-management-view'
-import { ApiTesterView } from './components/api-tester/api-tester-view'
 import { AdminLoginView } from './components/auth/admin-login-view'
 import {
   AnalyticsLiveView,
@@ -716,7 +715,6 @@ export default function App() {
           {activeView === 'roles' && <RolesManagementView currentUser={currentUser} />}
           {activeView === 'content' && <ContentManagementView />}
           {activeView === 'account' && <AccountView user={currentUser} onSaved={setCurrentUser} />}
-          {activeView === 'api-tester' && <ApiTesterView />}
         </main>
       </div>
 

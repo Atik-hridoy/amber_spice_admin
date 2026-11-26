@@ -9,7 +9,6 @@ export type AdminView =
   | 'customers'
   | 'staff'
   | 'transactions'
-  | 'api-tester'
   | 'roles'
   | 'content'
   | 'account'

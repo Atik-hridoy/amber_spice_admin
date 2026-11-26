@@ -5,7 +5,7 @@ const VIEW_PERMISSIONS: Record<AdminView, string[]> = {
   tables: ['reservations:view', 'reservations:manage'], analytics: ['reports:view'],
   inventory: ['inventory:view', 'inventory:manage'], products: ['menu:manage', 'menu:toggle_availability'],
   promotions: ['settings:manage'], customers: ['customers:view'], staff: ['staff:manage'],
-  transactions: ['orders:view', 'reports:view'], 'api-tester': ['settings:manage'], roles: ['settings:manage'],
+  transactions: ['orders:view', 'reports:view'], roles: ['settings:manage'],
   content: ['settings:manage'], account: [],
 }
 export function getAllowedViews(user?: AdminUser | null): AdminView[] {
